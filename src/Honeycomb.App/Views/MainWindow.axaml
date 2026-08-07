@@ -1,0 +1,56 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:Honeycomb.App.ViewModels"
+        x:Class="Honeycomb.App.Views.MainWindow"
+        x:DataType="vm:MainWindowViewModel"
+        Title="Guitar Hero Toolkit"
+        Width="480"
+        Height="700"
+        MinWidth="420"
+        MinHeight="560"
+        Icon="/Assets/honeycomb.ico"
+        WindowStartupLocation="CenterScreen">
+
+    <DockPanel>
+
+        <Menu DockPanel.Dock="Top">
+            <MenuItem Header="File">
+                <MenuItem Header="Compile a Song" Command="{Binding OpenCompileSongCommand}" />
+                <MenuItem Header="Import SGH Archive" Command="{Binding OpenImportSghCommand}" />
+                <MenuItem Header="PAK Tools" Command="{Binding OpenPakToolsCommand}" />
+                <MenuItem Header="PS2 Archive Tools" Command="{Binding OpenWadToolsCommand}" />
+                <MenuItem Header="Song Manager" Command="{Binding OpenSongListManagerCommand}" />
+                <Separator />
+                <MenuItem Header="Settings" Command="{Binding OpenSettingsCommand}" />
+            </MenuItem>
+        </Menu>
+
+        <StackPanel DockPanel.Dock="Bottom" Margin="10,6,10,10" Spacing="4">
+            <TextBlock Text="Console Output" FontWeight="SemiBold" />
+        <Border BorderBrush="#888" BorderThickness="1" CornerRadius="4">
+                <ListBox x:Name="ConsoleList"
+                         ItemsSource="{Binding ConsoleLines}"
+                         MinHeight="180"
+                         MaxHeight="320"
+                         FontFamily="monospace"
+                         FontSize="12" />
+        </Border>
+        </StackPanel>
+
+        <StackPanel Margin="20,20" Spacing="10" VerticalAlignment="Top">
+            <TextBlock Text="Guitar Hero Toolkit" FontSize="24" FontWeight="Bold" HorizontalAlignment="Center" />
+            <TextBlock Text="{Binding Version}" HorizontalAlignment="Center" Foreground="#999" />
+
+            <TextBlock Text="{Binding FfmpegWarning}" TextWrapping="Wrap" Foreground="#b8860b" IsVisible="{Binding FfmpegWarning, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" Margin="0,6" />
+
+            <Button Content="Compile a Song" Command="{Binding OpenCompileSongCommand}" HorizontalAlignment="Stretch" Height="52" />
+            <Button Content="PAK Tools" Command="{Binding OpenPakToolsCommand}" HorizontalAlignment="Stretch" Height="52" />
+            <Button Content="PS2 Archive Tools" Command="{Binding OpenWadToolsCommand}" HorizontalAlignment="Stretch" Height="52" />
+            <TextBlock Text="Other Tools" HorizontalAlignment="Center" Margin="0,8,0,0" />
+            <Button Content="Song Manager" Command="{Binding OpenSongListManagerCommand}" HorizontalAlignment="Stretch" Height="52" />
+            <Button Content="Import SGH Archive" Command="{Binding OpenImportSghCommand}" HorizontalAlignment="Stretch" Height="52" />
+        </StackPanel>
+
+    </DockPanel>
+
+</Window>

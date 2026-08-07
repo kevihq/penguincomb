@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=Honeycomb
+GenericName=Guitar Hero Toolkit
+Comment=Create and manage Guitar Hero custom songs (GH3, GHA, GHWT, GH5, GHWoR)
+Exec=honeycomb %F
+Icon=honeycomb
+Terminal=false
+Categories=AudioVideo;AudioVideoEditing;Game;
+MimeType=application/x-ghproj;
+Keywords=Guitar;Hero;Custom;Song;PAK;WAD;SGH;

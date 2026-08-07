@@ -1,0 +1,100 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:Honeycomb.App.ViewModels"
+        x:Class="Honeycomb.App.Views.SettingsWindow"
+        x:DataType="vm:SettingsViewModel"
+        Title="Settings &amp; Information"
+        Width="700"
+        Height="560"
+        MinWidth="600"
+        MinHeight="480"
+        Icon="/Assets/honeycomb.ico"
+        WindowStartupLocation="CenterOwner"
+        CanResize="False">
+
+    <DockPanel Margin="10">
+
+        <Button DockPanel.Dock="Bottom" Content="Save &amp; Close" Command="{Binding SaveAndCloseCommand}" HorizontalAlignment="Right" MinWidth="120" Margin="0,8,0,0" />
+
+        <TabControl>
+            <TabItem Header="Compile a Song">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Spacing="8" Margin="10">
+                        <CheckBox Content="Show Compile Success Popup" IsChecked="{Binding ShowPostCompile}" />
+                        <CheckBox Content="Override Beat Lines (if applicable)" IsChecked="{Binding OverrideBeatLines}" />
+
+                        <Border BorderBrush="#888" BorderThickness="1" CornerRadius="4" Padding="8">
+                            <StackPanel Spacing="8">
+                                <TextBlock Text="Preview Fade Values (Seconds)" FontWeight="SemiBold" />
+                                <Grid ColumnDefinitions="90,120,90,120">
+                                <TextBlock Text="Fade In:" VerticalAlignment="Center" />
+                                <NumericUpDown Grid.Column="1" Value="{Binding PreviewFadeIn}" Minimum="0" Maximum="10" Increment="0.05" FormatString="0.00" />
+                                <TextBlock Grid.Column="2" Text="Fade Out:" VerticalAlignment="Center" />
+                                <NumericUpDown Grid.Column="3" Value="{Binding PreviewFadeOut}" Minimum="0" Maximum="10" Increment="0.05" FormatString="0.00" />
+                            </Grid>
+                            </StackPanel>
+                        </Border>
+
+                        <CheckBox Content="Encrypt Audio" IsChecked="{Binding EncryptAudio}" />
+                        <CheckBox Content="Enable GH3+ Settings for PC" IsChecked="{Binding Gh3Plus}" />
+
+                        <Grid ColumnDefinitions="160,*">
+                            <TextBlock Text="GH3 Folder Path (PC)" VerticalAlignment="Center" />
+                            <Grid Grid.Column="1" ColumnDefinitions="*,80">
+                                <TextBox Text="{Binding Gh3FolderPath}" />
+                                <Button Grid.Column="1" Content="Browse..." Command="{Binding BrowseGh3FolderCommand}" Margin="6,0,0,0" />
+                            </Grid>
+                        </Grid>
+                        <Grid ColumnDefinitions="160,*">
+                            <TextBlock Text="GHA Folder Path (PC)" VerticalAlignment="Center" />
+                            <Grid Grid.Column="1" ColumnDefinitions="*,80">
+                                <TextBox Text="{Binding GhaFolderPath}" />
+                                <Button Grid.Column="1" Content="Browse..." Command="{Binding BrowseGhaFolderCommand}" Margin="6,0,0,0" />
+                            </Grid>
+                        </Grid>
+                        <Grid ColumnDefinitions="160,*">
+                            <TextBlock Text="GHWT MODS Folder Path" VerticalAlignment="Center" />
+                            <Grid Grid.Column="1" ColumnDefinitions="*,80">
+                                <TextBox Text="{Binding WtModsFolder}" />
+                                <Button Grid.Column="1" Content="Browse..." Command="{Binding BrowseModsFolderCommand}" Margin="6,0,0,0" />
+                            </Grid>
+                        </Grid>
+                        <Grid ColumnDefinitions="160,*">
+                            <TextBlock Text="Onyx CLI Path" VerticalAlignment="Center" />
+                            <Grid Grid.Column="1" ColumnDefinitions="*,80">
+                                <TextBox Text="{Binding OnyxCliPath}" />
+                                <Button Grid.Column="1" Content="Browse..." Command="{Binding BrowseOnyxCommand}" Margin="6,0,0,0" />
+                            </Grid>
+                        </Grid>
+                        <Grid ColumnDefinitions="160,*">
+                            <TextBlock Text="FFmpeg Folder (optional)" VerticalAlignment="Center" />
+                            <Grid Grid.Column="1" ColumnDefinitions="*,80">
+                                <TextBox Text="{Binding FfmpegPath}" />
+                                <Button Grid.Column="1" Content="Browse..." Command="{Binding BrowseFfmpegCommand}" Margin="6,0,0,0" />
+                            </Grid>
+                        </Grid>
+
+                        <Grid ColumnDefinitions="160,*,160,*">
+                            <TextBlock Text="Preferred Console:" VerticalAlignment="Center" />
+                            <ComboBox Grid.Column="1" ItemsSource="{Binding PreferredConsoleOptions}" SelectedIndex="{Binding PreferredConsoleIndex}" />
+                            <TextBlock Grid.Column="2" Text="Default DLC Shortname:" VerticalAlignment="Center" Margin="12,0,0,0" />
+                            <ComboBox Grid.Column="3" ItemsSource="{Binding DlcNameOptions}" SelectedIndex="{Binding DlcShortnameIndex}" />
+                        </Grid>
+                        <Grid ColumnDefinitions="160,*">
+                            <TextBlock Text="Duplicate Checksum Warning" VerticalAlignment="Center" />
+                            <ComboBox Grid.Column="1" ItemsSource="{Binding ChecksumWarningOptions}" SelectedIndex="{Binding ChecksumWarningIndex}" HorizontalAlignment="Left" MinWidth="240" />
+                        </Grid>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
+            <TabItem Header="Songlist Manager">
+                <StackPanel Spacing="8" Margin="10">
+                    <CheckBox Content="Delete Files After Removing Song" IsChecked="{Binding SongManagerDeleteSongs}" />
+                </StackPanel>
+            </TabItem>
+        </TabControl>
+
+    </DockPanel>
+
+</Window>

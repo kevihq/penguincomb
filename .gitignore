@@ -1,0 +1,15 @@
+# Build outputs
+bin/
+obj/
+artifacts/
+
+# NuGet packages cache (used locally when the sandbox/home is read-only)
+.nuget-packages/
+
+# Scratch/debug projects
+scratch/
+
+# IDE
+.vs/
+.idea/
+*.user

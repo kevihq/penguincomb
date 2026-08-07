@@ -1,0 +1,541 @@
+diff --git a/Audio/FSB.cs b/Audio/FSB.cs
+index 303345c..f0a1049 100644
+--- a/Audio/FSB.cs
++++ b/Audio/FSB.cs
+@@ -25,7 +25,7 @@ namespace GH_Toolkit_Core.Audio
+     public class FSB
+     {
+         private static string? rootFolder = ExeRootFolder;
+-        private static string? audioPad48k128kbps = Path.Combine(rootFolder, "Audio\\Blank Audio\\48k128kbps.mp3");
++        private static string? audioPad48k128kbps = Path.Combine(rootFolder, "Audio", "Blank Audio", "48k128kbps.mp3");
+         private ReadWrite fsb_writer = new ReadWrite("little");
+         private ReadWrite dat_writer = new ReadWrite("big");
+ 
+@@ -36,7 +36,6 @@ namespace GH_Toolkit_Core.Audio
+ 
+         public async Task ConvertToMp3(string inputPath, string outputPath)
+         {
+-
+             /*string arg_test = FFMpegArguments
+             .FromFileInput(inputPath)
+             .OutputToFile(outputPath, false, options => options
+@@ -75,6 +74,21 @@ namespace GH_Toolkit_Core.Audio
+             }
+             
+         }
++        /// <summary>
++        /// Honeycomb patch: FFMpegCore 5.x (official NuGet) has no array overload for
++        /// FromFileInput; chain AddFileInput calls instead. The upstream fork used by
++        /// GH-Toolkit had a custom array overload.
++        /// </summary>
++        private static FFMpegArguments FromFileInputs(string[] paths, bool overwrite)
++        {
++            FFMpegArguments args = FFMpegArguments.FromFileInput(paths[0], overwrite);
++            foreach (string path in paths.Skip(1))
++            {
++                args = args.AddFileInput(path, overwrite);
++            }
++            return args;
++        }
++
+         public static string GetMixFilter(decimal startTime = 0, decimal trimDuration = 30, decimal fadeIn = 1, decimal fadeOut = 1, decimal volume = -7)
+         {
+             CultureInfo culture = new CultureInfo("en-US");
+@@ -176,8 +190,7 @@ namespace GH_Toolkit_Core.Audio
+                 {
+                     if (convertTo == MP3)
+                     {
+-                        await FFMpegArguments
+-                        .FromFileInput(paths, true)
++                        await FromFileInputs(paths, true)
+                         .OutputToFile(outputPath, true, options => options
+                             .WithCustomArgument(ffmpegArgs)
+                             .WithAudioCodec(AudioCodec.LibMp3Lame) // Set the audio codec to MP3
+@@ -189,13 +202,13 @@ namespace GH_Toolkit_Core.Audio
+                     }
+                     else if (convertTo == WAV)
+                     {
+-                        var settings = FFMpegArguments
+-                            .FromFileInput(paths, true)
++                        // Honeycomb patch: official FFMpegCore has no AudioCodec.PcmS16le member
++                        // (the upstream fork added one); pass the codec as a custom argument instead.
++                        var settings = FromFileInputs(paths, true)
+                             .OutputToFile(outputPath, true, options => options
+                                 .WithCustomArgument(ffmpegArgs)
+-                                .WithAudioCodec(AudioCodec.PcmS16le)
+                                 .WithAudioSamplingRate(sampleRate) // Set the sample rate to variable
+-                                .WithCustomArgument("-ac 2") // Force 2 Channels (Stereo)
++                                .WithCustomArgument("-c:a pcm_s16le -ac 2") // Force 2 Channels (Stereo)
+                                 .WithoutMetadata()// Remove metadata
+                         );
+                         await settings.ProcessAsynchronously();
+@@ -293,25 +306,36 @@ namespace GH_Toolkit_Core.Audio
+             {
+                 StartInfo = new ProcessStartInfo
+                 {
++                    // Honeycomb patch: use ArgumentList instead of a shell-quoted string so
++                    // paths with spaces and non-ASCII characters are handled safely on all OSes.
+                     FileName = "ffprobe",
+-                    Arguments = $"-v quiet -print_format json -show_format \"{filePath}\"",
+                     RedirectStandardOutput = true,
++                    RedirectStandardError = true,
+                     UseShellExecute = false,
+                     CreateNoWindow = true
+                 }
+             };
++            ffprobe.StartInfo.ArgumentList.Add("-v");
++            ffprobe.StartInfo.ArgumentList.Add("quiet");
++            ffprobe.StartInfo.ArgumentList.Add("-print_format");
++            ffprobe.StartInfo.ArgumentList.Add("json");
++            ffprobe.StartInfo.ArgumentList.Add("-show_format");
++            ffprobe.StartInfo.ArgumentList.Add(filePath);
+ 
+             try
+             {
+                 ffprobe.Start();
+ 
+-                // Read the output
+-                string output = ffprobe.StandardOutput.ReadToEnd();
++                // Read the output asynchronously (can't deadlock on large pipes), then wait.
++                var outputTask = ffprobe.StandardOutput.ReadToEndAsync();
++                var errorTask = ffprobe.StandardError.ReadToEndAsync();
+                 ffprobe.WaitForExit();
++                string output = outputTask.GetAwaiter().GetResult();
++                string errorOutput = errorTask.GetAwaiter().GetResult();
+ 
+                 if (ffprobe.ExitCode != 0)
+                 {
+-                    throw new Exception("ffprobe did not execute successfully.");
++                    throw new Exception($"ffprobe did not execute successfully: {errorOutput}");
+                 }
+ 
+                 // Parse the JSON output to get the duration
+diff --git a/Audio/MSV.cs b/Audio/MSV.cs
+index 0d53a67..2e7ea1f 100644
+--- a/Audio/MSV.cs
++++ b/Audio/MSV.cs
+@@ -1,4 +1,5 @@
+ ﻿using NAudio.Wave;
++using NAudio.Wave.SampleProviders;
+ using GH_Toolkit_Core.Methods;
+ using System.Text;
+ using static GH_Toolkit_Core.Methods.GlobalVariables;
+@@ -93,8 +94,6 @@ namespace GH_Toolkit_Core.Audio
+         public string[]? getWavStreams(string filePath, int sampleRate = 33075)
+         {
+ 
+-            WaveFormat targetFormat = new WaveFormat(sampleRate, 16, 2); // Target format: 33075 Hz (or what is passed in), 16 bits, Stereo
+-
+             using (var resampledStream = new MemoryStream())
+             using (var wavReader = new WaveFileReader(filePath))
+             {
+@@ -113,11 +112,10 @@ namespace GH_Toolkit_Core.Audio
+                 // Check if the WAV file does not meet the expected format, sample rate, and bit depth
+                 if (wavReader.WaveFormat.SampleRate != sampleRate || wavReader.WaveFormat.BitsPerSample != 16 || wavReader.WaveFormat.Channels != 2)
+                 {
+-                    // Resample the audio stream to the target format using MediaFoundationResampler
+-                    waveProvider = new MediaFoundationResampler(wavReader, targetFormat)
+-                    {
+-                        ResamplerQuality = 60 // Set the resampler quality (optional)
+-                    };
++                    // Honeycomb patch: the original used MediaFoundationResampler here, which is
++                    // Windows-only. WdlResamplingSampleProvider is a pure managed resampler (the same
++                    // algorithm REAPER uses) and produces equivalent 16-bit stereo output on every OS.
++                    waveProvider = ResampleToTargetFormat(wavReader, sampleRate);
+                 }
+ 
+                 // Directly write from waveProvider to MemoryStream
+@@ -135,6 +133,72 @@ namespace GH_Toolkit_Core.Audio
+                 return streams;
+             }
+         }
++        /// <summary>
++        /// Converts a WAV file to 16-bit stereo PCM at the requested sample rate using only
++        /// managed NAudio providers (no Windows Media Foundation dependency).
++        /// </summary>
++        private static IWaveProvider ResampleToTargetFormat(WaveFileReader source, int sampleRate)
++        {
++            ISampleProvider samples;
++            if (source.WaveFormat.Encoding == WaveFormatEncoding.IeeeFloat)
++            {
++                samples = new FloatWaveToSampleProvider(source);
++            }
++            else if (source.WaveFormat.BitsPerSample == 24)
++            {
++                samples = new Pcm24BitToSampleProvider(source);
++            }
++            else if (source.WaveFormat.BitsPerSample == 32)
++            {
++                samples = new Pcm32BitToSampleProvider(source);
++            }
++            else
++            {
++                samples = new Pcm16BitToSampleProvider(source);
++            }
++
++            if (samples.WaveFormat.Channels == 1)
++            {
++                samples = samples.ToStereo();
++            }
++
++            if (samples.WaveFormat.SampleRate != sampleRate)
++            {
++                samples = new WdlResamplingSampleProvider(samples, sampleRate);
++            }
++
++            return new SampleToWaveProvider16(samples);
++        }
++
++        /// <summary>
++        /// Minimal managed IEEE-float WAV to sample-provider adapter (NAudio has no built-in
++        /// converter that accepts an arbitrary IWaveProvider).
++        /// </summary>
++        private sealed class FloatWaveToSampleProvider : ISampleProvider
++        {
++            private readonly IWaveProvider _source;
++            private readonly byte[] _buffer;
++            public WaveFormat WaveFormat { get; }
++
++            public FloatWaveToSampleProvider(IWaveProvider source)
++            {
++                _source = source;
++                WaveFormat = new WaveFormat(source.WaveFormat.SampleRate, 32, source.WaveFormat.Channels);
++                _buffer = new byte[4096 * 4];
++            }
++
++            public int Read(float[] buffer, int offset, int count)
++            {
++                int bytesNeeded = count * 4;
++                int bytesRead = _source.Read(_buffer, 0, bytesNeeded);
++                int samplesRead = bytesRead / 4;
++                for (int i = 0; i < samplesRead; i++)
++                {
++                    buffer[offset + i] = BitConverter.ToSingle(_buffer, i * 4);
++                }
++                return samplesRead;
++            }
++        }
+         public void makeMSV(string filePath, string songName = "")
+         {
+             // Code converted from MaxKiller/GameZelda's MSV encoder
+diff --git a/Audio/MSVConversion.cs b/Audio/MSVConversion.cs
+index 4872c97..a27a8e2 100644
+--- a/Audio/MSVConversion.cs
++++ b/Audio/MSVConversion.cs
+@@ -27,9 +27,8 @@ namespace GH_Toolkit_Core.Audio
+             var settings = FFMpegArguments
+                 .FromFileInput(inputPath)
+                 .OutputToFile(outPathTemp, true, options => options
+-                    .WithAudioCodec(AudioCodec.PcmS16le)
+                     .WithAudioSamplingRate(sampleRate) // Set the sample rate to variable
+-                    .WithCustomArgument("-ac 2 -filter:a \"volume=0dB\"") // Force 2 Channels (Stereo)
++                    .WithCustomArgument("-c:a pcm_s16le -ac 2 -filter:a \"volume=0dB\"") // 16-bit PCM, Stereo
+                     .WithoutMetadata()// Remove metadata
+                 );
+             await settings.ProcessAsynchronously();
+diff --git a/Checksum/CRC.cs b/Checksum/CRC.cs
+index aef5fc3..9e37907 100644
+--- a/Checksum/CRC.cs
++++ b/Checksum/CRC.cs
+@@ -335,24 +335,8 @@ namespace GH_Toolkit_Core.Checksum
+ 
+         internal static void DebugTest()
+         {
+-            string[] lines = File.ReadAllLines("D:\\Visual Studio\\Repos\\GH-Toolkit\\debug.txt");
+-
+-            foreach (string line in lines)
+-            {
+-                string[] pairs = line.Split(" ");
+-                string dbg_hex = pairs[0];
+-                string orig_string = pairs[1].Replace("\"", "");
+-
+-                string new_string = QBKey(orig_string);
+-
+-                int old_hex = Convert.ToInt32(dbg_hex.Substring(2), 16);
+-                int new_hex = Convert.ToInt32(new_string, 16);
+-
+-                if (old_hex != new_hex)
+-                {
+-                    Console.WriteLine(string.Format("{0} checksum {1} does not match {2}", orig_string, dbg_hex, new_string));
+-                }
+-            }
++            // Honeycomb patch: disabled - the original referenced a hardcoded Windows developer path.
++            // Kept as a no-op so any debug-only callers still compile on all platforms.
+         }
+ 
+         public static void QBKeyGen()
+diff --git a/GH-Toolkit-Core.csproj b/GH-Toolkit-Core.csproj
+index 54de696..eb78023 100644
+--- a/GH-Toolkit-Core.csproj
++++ b/GH-Toolkit-Core.csproj
+@@ -13,7 +13,7 @@
+     <PackageReference Include="ini-parser" Version="2.5.2" />
+     <PackageReference Include="Melanchall.DryWetMidi" Version="7.2.0" />
+     <PackageReference Include="NAudio" Version="2.2.1" />
+-    <PackageReference Include="NAudio.Lame" Version="2.1.0" />
++    <PackageReference Include="FFMpegCore" Version="5.1.0" />
+     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+     <PackageReference Include="SharpZipLib" Version="1.4.2" />
+     <PackageReference Include="Ude.NetStandard" Version="1.2.0" />
+@@ -327,7 +327,7 @@
+     <Folder Include="Audio\MSV C Code\" />
+   </ItemGroup>
+ 	<ItemGroup>
+-		<ProjectReference Include="..\FFMpegCore\FFMpegCore\FFMpegCore.csproj" />
++		<!-- Honeycomb: replaced the out-of-tree FFMpegCore project reference with the official NuGet package -->
+ 	</ItemGroup>
+ 
+ </Project>
+diff --git a/Methods/CreateForGame.cs b/Methods/CreateForGame.cs
+index c1b6928..a79be1d 100644
+--- a/Methods/CreateForGame.cs
++++ b/Methods/CreateForGame.cs
+@@ -623,7 +623,9 @@ namespace GH_Toolkit_Core.Methods
+                 var (songlist, _) = ParseQFromFile(songlistPath);
+                 FileCreation.AddToSonglistGh3(songlist, songListEntry);
+                 string localeDirectory = Path.Combine(compilePath, $"dl{checksum}_text{locale}");
+-                string qbFile = Path.Combine(localeDirectory, textChecksum);
++                // Honeycomb patch: use forward slashes for the on-disk path (the backslash name is
++                // only used for the archive-internal QB name below; the PAK compiler normalizes).
++                string qbFile = Path.Combine(localeDirectory, textChecksum.Replace('\\', '/'));
+                 string qbDirectory = Path.GetDirectoryName(qbFile);
+                 Directory.CreateDirectory(qbDirectory);
+                 var qbBytes = CompileQbFile(songlist, textChecksum, game, platform);
+@@ -638,7 +640,7 @@ namespace GH_Toolkit_Core.Methods
+             var scriptChecksum = $"download\\dl{checksum}.q";
+             string scriptPath = Path.Combine(gh3Resource, "script_override.q");
+             string pakPath = Path.Combine(compilePath, $"dl{checksum}");
+-            string savePath = Path.Combine(pakPath, scriptChecksum);
++            string savePath = Path.Combine(pakPath, scriptChecksum.Replace('\\', '/'));
+             string saveDirectory = Path.GetDirectoryName(savePath);
+             Directory.CreateDirectory(saveDirectory);
+             File.Copy(scriptPath, savePath, true);
+@@ -708,7 +710,7 @@ namespace GH_Toolkit_Core.Methods
+             var dlcTextqb = CompileQbFile(songlistQb, textChecksum, game, platform);
+             var dlcTextFolder = Path.Combine(compilePath, $"{dlcModifier}dl{checksum}_text");
+ 
+-            var downloadFolder = Path.GetDirectoryName(Path.Combine(dlcTextFolder, textChecksum));
++            var downloadFolder = Path.GetDirectoryName(Path.Combine(dlcTextFolder, textChecksum.Replace('\\', '/')));
+             //var blankQs = "blank_qs.qs";
+             var dlcTextQsBlank = Path.Combine(gameResource, blankScripts);
+ 
+@@ -717,10 +719,10 @@ namespace GH_Toolkit_Core.Methods
+             Directory.CreateDirectory(Path.Combine(manifestFolder, $"download{checksum}"));
+ 
+             var manifestQbBytes = CompileQbFile(manifestQb, manifestName, game, platform);
+-            File.WriteAllBytes(Path.Combine(manifestFolder, manifestName), manifestQbBytes);
++            File.WriteAllBytes(Path.Combine(manifestFolder, manifestName.Replace('\\', '/')), manifestQbBytes);
+ 
+             File.Copy(dlcScriptsPath, Path.Combine(dlcScriptsFolder, "0xb1392214.0x179eac5.qb"), true);
+-            File.WriteAllBytes(Path.Combine(dlcTextFolder, textChecksum), dlcTextqb);
++            File.WriteAllBytes(Path.Combine(dlcTextFolder, textChecksum.Replace('\\', '/')), dlcTextqb);
+ 
+             string[] locales = ["en", "fr", "de", "it", "es"];
+             foreach (string locale in locales)
+@@ -971,7 +973,24 @@ namespace GH_Toolkit_Core.Methods
+         }
+         public static void CompileWithOnyx(string onyxPath, string[] onyxArgs)
+         {
+-            string onyxExe = Path.Combine(onyxPath, "onyx.exe");
++            // Honeycomb patch: accept either a full path to the executable or a containing folder,
++            // resolve the platform-appropriate executable name, and launch without a shell so
++            // arguments with spaces/non-ASCII characters are passed safely on every OS.
++            string onyxExe;
++            if (File.Exists(onyxPath))
++            {
++                onyxExe = onyxPath;
++            }
++            else if (Directory.Exists(onyxPath))
++            {
++                string exeName = OperatingSystem.IsWindows() ? "onyx.exe" : "onyx";
++                onyxExe = Path.Combine(onyxPath, exeName);
++            }
++            else
++            {
++                throw new FileNotFoundException("Onyx executable not found at the specified location.");
++            }
++
+             if (onyxArgs.Length == 0)
+             {
+                 throw new Exception("No arguments were provided for Onyx compilation.");
+@@ -986,45 +1005,39 @@ namespace GH_Toolkit_Core.Methods
+             if (compileType == "stfs")
+             {
+                 compileDir = onyxArgs[1];
+-                onyxArgs[1] = $"\"{onyxArgs[1]}\"";
+-                onyxArgs[3] = $"\"{onyxArgs[3]}\"";
+             }
+             else
+             {
+                 compileDir = onyxArgs[2];
+-                onyxArgs[2] = $"\"{onyxArgs[2]}\"";
+-                onyxArgs[4] = $"\"{onyxArgs[4]}\"";
+             }
++
+             ProcessStartInfo startInfo = new ProcessStartInfo(onyxExe);
+             startInfo.CreateNoWindow = false;
+-            startInfo.UseShellExecute = true;
+-            // startInfo.RedirectStandardOutput = true;
+-
++            startInfo.UseShellExecute = false;
+             startInfo.WindowStyle = ProcessWindowStyle.Normal;
+-            startInfo.Arguments = string.Join(" ", onyxArgs);
++            foreach (string arg in onyxArgs)
++            {
++                startInfo.ArgumentList.Add(arg);
++            }
+             try
+             {
+-                // Start the process with the info we specified.
+-                // Call WaitForExit and then the using statement will close.
+                 using (Process exeProcess = new Process())
+                 {
+                     exeProcess.StartInfo = startInfo;
+                     exeProcess.Start();
+-
+-                    // StreamReader reader = exeProcess.StandardOutput;
+-                    // string output = reader.ReadToEnd();
+                     exeProcess.WaitForExit();
+-
+-                    // Console.WriteLine(output);
++                    if (exeProcess.ExitCode != 0)
++                    {
++                        throw new Exception($"Onyx exited with code {exeProcess.ExitCode}. See the Onyx output for details.");
++                    }
+                 }
+             }
+-            catch (Exception ex)
+-            {
+-                throw;
+-            }
+             finally
+             {
+-                Directory.Delete(compileDir, true);
++                if (Directory.Exists(compileDir))
++                {
++                    Directory.Delete(compileDir, true);
++                }
+             }
+         }
+     }
+diff --git a/Methods/GlobalVariables.cs b/Methods/GlobalVariables.cs
+index 40fdc8e..bdee4bc 100644
+--- a/Methods/GlobalVariables.cs
++++ b/Methods/GlobalVariables.cs
+@@ -3,6 +3,7 @@ using System.Collections.Generic;
+ using System.Linq;
+ using System.Text;
+ using System.Threading.Tasks;
++using FFMpegCore;
+ 
+ namespace GH_Toolkit_Core.Methods
+ {
+@@ -10,7 +11,7 @@ namespace GH_Toolkit_Core.Methods
+     {
+         public static string ExeRootFolder { get; private set; }
+         public static string BlankWav { get; private set; }
+-        
++
+         static GlobalVariables()
+         {
+             ExeRootFolder = GetRootFolder();
+@@ -23,7 +24,30 @@ namespace GH_Toolkit_Core.Methods
+         }
+         static string GetBlankWav()
+         {
+-            return Path.Combine(ExeRootFolder, "Audio\\Blank Audio\\blankWav.wav");
++            // Honeycomb patch: build the path with Path.Combine so it works on
++            // case-sensitive Linux filesystems instead of hardcoded backslashes.
++            return Path.Combine(ExeRootFolder, "Audio", "Blank Audio", "blankWav.wav");
++        }
++
++        /// <summary>
++        /// Configures the ffmpeg/ffprobe binary folder used by FFMpegCore.
++        /// Passing null restores the default behavior (search PATH).
++        /// Honeycomb patch: allows the GUI to point the toolkit at a user-selected
++        /// ffmpeg installation instead of requiring it on PATH.
++        /// </summary>
++        public static void ConfigureFFmpeg(string? ffmpegFolder)
++        {
++            GlobalFFOptions.Configure(options =>
++            {
++                if (!string.IsNullOrEmpty(ffmpegFolder))
++                {
++                    options.BinaryFolder = ffmpegFolder;
++                }
++                else
++                {
++                    options.BinaryFolder = null;
++                }
++            });
+         }
+     }
+ }
+diff --git a/PAK/PAK.cs b/PAK/PAK.cs
+index 7342fa5..4893f30 100644
+--- a/PAK/PAK.cs
++++ b/PAK/PAK.cs
+@@ -25,11 +25,8 @@ using GH_Toolkit_Core.Checksum;
+ using Melanchall.DryWetMidi.Interaction;
+ using static GH_Toolkit_Core.Debug.DebugReader;
+ using Microsoft.VisualBasic;
+-using NAudio.Lame;
+ using System.IO;
+ using System.Net.NetworkInformation;
+-using static ICSharpCode.SharpZipLib.Zip.ExtendedUnixData;
+-using Instances.Exceptions;
+ 
+ /*
+  * * This file is intended to be a collection of custom methods to read and create PAK files
+@@ -1970,15 +1967,19 @@ namespace GH_Toolkit_Core.PAK
+                 string relPath = Path.GetRelativePath(folderPath, entry).ToLower();
+                 if (ConsoleType == CONSOLE_PS2)
+                 {
+-                    return relPath;
++                    // Honeycomb patch: PAK entry paths are stored with backslash separators
++                    // regardless of the host OS (matches the checksum normalization and Windows
++                    // output byte-for-byte).
++                    return relPath.Replace('/', '\\');
+                 }
+                 if (relPath.EndsWith(".xen") || relPath.EndsWith(".ps3"))
+                 {
+                     relPath = relPath.Substring(0, relPath.Length - 4);
+                 }
+ 
+-
+-                return relPath;
++                // Honeycomb patch: normalize separators to match Windows output byte-for-byte
++                // for the entry name strings stored inside the archive.
++                return relPath.Replace('/', '\\');
+             }
+         }
+         public static byte[] lzssDecompTest(string filePath)
+diff --git a/PAK/SongPakCompiler.cs b/PAK/SongPakCompiler.cs
+index 7bc650c..ab92e96 100644
+--- a/PAK/SongPakCompiler.cs
++++ b/PAK/SongPakCompiler.cs
+@@ -186,7 +186,7 @@ namespace GH_Toolkit_Core.PAK
+             string scopedSongName = isExpertPlus ? EffectiveSongName + "X" : EffectiveSongName;
+ 
+             string saveName = Path.Combine(_savePath, $"{scopedSongName}_{_gameConsole}");
+-            string pakFolder = _gameConsole == CONSOLE_PS2 ? "data\\songs" : "songs";
++            string pakFolder = _gameConsole == CONSOLE_PS2 ? Path.Combine("data", "songs") : "songs";
+             string songFolder = Path.Combine(saveName, pakFolder);
+             string qbSave = Path.Combine(songFolder, scopedSongName + $".mid.qb{_consoleExt}");
+ 
+diff --git a/PS2/WAD.cs b/PS2/WAD.cs
+index 1897d61..df15e13 100644
+--- a/PS2/WAD.cs
++++ b/PS2/WAD.cs
+@@ -139,7 +139,10 @@ namespace GH_Toolkit_Core.PS2
+                     
+                 entry.sectorIndex = sectorIndex;
+                 UpdateFolderEntries(entry, folders, folderChecks);
+-                hedFile.AddEntry(sectorIndex, entry.fileSize, "\\" + entry.RelPath);
++                // Honeycomb patch: HED entry paths are stored with backslash separators per the
++                // format spec; normalize on non-Windows platforms where Path separators differ.
++                string hedPath = "\\" + entry.RelPath.Replace('/', '\\');
++                hedFile.AddEntry(sectorIndex, entry.fileSize, hedPath);
+                 sectorIndex += entry.paddedSize / SECTORSIZE;
+             }
+         }

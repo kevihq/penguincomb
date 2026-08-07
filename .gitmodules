@@ -1,0 +1,4 @@
+[submodule "external/GH-Toolkit"]
+	path = external/GH-Toolkit
+	url = https://github.com/AddyMills/GH-Toolkit-NET.git
+	branch = master
