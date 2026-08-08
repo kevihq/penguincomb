@@ -236,6 +236,64 @@ public class BatchCompileTests : IDisposable
     }
 
     [Fact]
+    public async Task Batch_ChFolder_NameSuffix_IsAppendedToNameAndTitle()
+    {
+        Directory.CreateDirectory(_root);
+        _fixture.GameLocator.Folder = CreateValidGh3Folder(_root);
+
+        string chFolder = Path.Combine(_root, "My Great Song");
+        Directory.CreateDirectory(chFolder);
+        File.WriteAllText(Path.Combine(chFolder, "song.ini"), """
+            [song]
+            name = My Great Song
+            artist = Someone
+            checksum = mygreatsong
+            """);
+
+        var results = await _fixture.Service.CompileChFoldersAsync([chFolder], nameSuffix: "GH 2");
+
+        Assert.Single(results);
+        Assert.Equal("mygreatsong - GH 2", results[0].SongName);
+
+        var saved = Honeycomb.Application.Models.SongProjectData.FromJson(
+            File.ReadAllText(Path.Combine(_fixture.AppData.DataDirectory, "Clone Hero Imports", "mygreatsong - GH 2.ghproj")));
+        Assert.NotNull(saved);
+        Assert.Equal("mygreatsong - GH 2", saved!.songName);
+        Assert.Equal("My Great Song - GH 2", saved.title);
+    }
+
+    [Fact]
+    public async Task Batch_ChFolder_NameSuffix_LeadingDashDoesNotDoubleSeparator()
+    {
+        Directory.CreateDirectory(_root);
+        _fixture.GameLocator.Folder = CreateValidGh3Folder(_root);
+
+        string chFolder = Path.Combine(_root, "My Great Song");
+        Directory.CreateDirectory(chFolder);
+        File.WriteAllText(Path.Combine(chFolder, "song.ini"), "[song]\nname = My Great Song\nchecksum = mygreatsong\n");
+
+        var results = await _fixture.Service.CompileChFoldersAsync([chFolder], nameSuffix: "- GH 2");
+
+        Assert.Single(results);
+        Assert.Equal("mygreatsong - GH 2", results[0].SongName);
+    }
+
+    [Fact]
+    public async Task Batch_ProjectFiles_NameSuffixIsIgnored()
+    {
+        Directory.CreateDirectory(_root);
+        string a = WriteProject(Path.Combine(_root, "a.ghproj"), "songa");
+
+        // The suffix only applies to imported Clone Hero songs; .ghproj projects
+        // keep their own names untouched.
+        var results = await _fixture.Service.CompileAsync(
+            [new BatchSource(BatchSourceKind.Project, a)], nameSuffix: "GH 2");
+
+        Assert.Single(results);
+        Assert.Equal("songa", results[0].SongName);
+    }
+
+    [Fact]
     public void BatchViewModel_AddRemoveClear_ManagesSongList()
     {
         Directory.CreateDirectory(_root);

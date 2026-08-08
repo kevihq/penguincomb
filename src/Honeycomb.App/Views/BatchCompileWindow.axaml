@@ -14,6 +14,14 @@
     <DockPanel Margin="10">
 
         <StackPanel DockPanel.Dock="Bottom" Spacing="8">
+            <Grid ColumnDefinitions="Auto,*,Auto">
+                <TextBlock Text="Song name suffix:" VerticalAlignment="Center" ToolTip.Tip="Appended to the end of every imported Clone Hero song name, e.g. GH 2 becomes 'My Song - GH 2' (applies to Clone Hero songs only)." />
+                <TextBox Grid.Column="1" Text="{Binding NameSuffix}" Margin="8,0" Width="220" HorizontalAlignment="Left"
+                         IsEnabled="{Binding IsBusy, Converter={x:Static BoolConverters.Not}}"
+                         Watermark="e.g. GH 2" />
+                <TextBlock Grid.Column="2" Text="(Clone Hero songs only)" VerticalAlignment="Center" Foreground="#888" FontSize="11" />
+            </Grid>
+
             <TextBlock Text="{Binding StatusText}" TextWrapping="Wrap" />
             <ProgressBar Minimum="0" Maximum="{Binding ProgressMaximum}" Value="{Binding ProgressValue}" Height="8" />
 

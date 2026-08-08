@@ -50,12 +50,15 @@ public class BatchCompileService
             progress, cancellationToken);
 
     /// <summary>Imports and compiles Clone Hero song folders as GH3 PC songs.</summary>
+    /// <param name="nameSuffix">Optional text appended to the end of every imported
+    /// song's name and title (e.g. "GH 2" becomes "My Song - GH 2").</param>
     public Task<IReadOnlyList<BatchSongResult>> CompileChFoldersAsync(
         IReadOnlyList<string> folders,
+        string? nameSuffix = null,
         IProgress<BatchCompileUpdate>? progress = null,
         CancellationToken cancellationToken = default)
         => CompileAsync(folders.Select(f => new BatchSource(BatchSourceKind.CloneHeroFolder, f)).ToList(),
-            progress, cancellationToken);
+            progress, cancellationToken, nameSuffix);
 
     /// <summary>
     /// Compiles every source in order. Cancellation stops the batch after the
@@ -64,7 +67,8 @@ public class BatchCompileService
     public async Task<IReadOnlyList<BatchSongResult>> CompileAsync(
         IReadOnlyList<BatchSource> sources,
         IProgress<BatchCompileUpdate>? progress = null,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        string? nameSuffix = null)
     {
         var results = new List<BatchSongResult>(sources.Count);
         int completed = 0;
@@ -84,7 +88,7 @@ public class BatchCompileService
                 if (source.Kind == BatchSourceKind.CloneHeroFolder)
                 {
                     progress?.Report(new BatchCompileUpdate(completed, sources.Count, displayName, "Importing Clone Hero folder..."));
-                    data = CreateChProject(source.Path, out songName);
+                    data = CreateChProject(source.Path, out songName, nameSuffix);
                 }
                 else
                 {
@@ -177,7 +181,7 @@ public class BatchCompileService
     /// directory so the compile pipeline's auto-save writes there instead of
     /// prompting, and the imported song can be reopened and tweaked later.
     /// </summary>
-    private SongProjectData CreateChProject(string folder, out string songName)
+    private SongProjectData CreateChProject(string folder, out string songName, string? nameSuffix)
     {
         var data = _projects.LoadProjectSync(_projects.DefaultTemplatePath) ?? new SongProjectData();
         _projects.LoadFromChFolder(data, folder);
@@ -188,6 +192,18 @@ public class BatchCompileService
 
         string folderName = DisplayName(folder);
         songName = string.IsNullOrWhiteSpace(data.songName) ? folderName : data.songName;
+
+        // Optional source tag appended to the end of the name, e.g. "GH 2" makes
+        // "My Song - GH 2". Applied to both the short name (keeps checksums
+        // distinct per source) and the display title (visible in-game).
+        if (!string.IsNullOrWhiteSpace(nameSuffix))
+        {
+            songName = ApplyNameSuffix(songName, nameSuffix);
+            if (!string.IsNullOrWhiteSpace(data.title))
+            {
+                data.title = ApplyNameSuffix(data.title, nameSuffix);
+            }
+        }
         data.songName = songName;
 
         string saveDir = Path.Combine(_appData.DataDirectory, "Clone Hero Imports");
@@ -219,6 +235,16 @@ public class BatchCompileService
     {
         string trimmed = path.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
         return Path.GetFileName(trimmed);
+    }
+
+    /// <summary>Appends a source tag with a clean separator: "My Song" + "GH 2"
+    /// becomes "My Song - GH 2" (a leading dash in the suffix avoids a double
+    /// separator).</summary>
+    private static string ApplyNameSuffix(string name, string suffix)
+    {
+        string trimmed = suffix.Trim();
+        string separator = trimmed.StartsWith("-") ? " " : " - ";
+        return name + separator + trimmed;
     }
 
     private static string SanitizeFileName(string name)

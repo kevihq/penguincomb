@@ -61,6 +61,10 @@ public partial class BatchCompileViewModel : ObservableObject
     [ObservableProperty]
     private string _statusText = "";
 
+    /// <summary>Optional text appended to the end of imported Clone Hero song names, e.g. "GH 2".</summary>
+    [ObservableProperty]
+    private string _nameSuffix = "";
+
     [ObservableProperty]
     private BatchSongItem? _selectedSong;
 
@@ -229,7 +233,8 @@ public partial class BatchCompileViewModel : ObservableObject
             }
 
             var progress = new Progress<BatchCompileUpdate>(ApplyUpdate);
-            var results = await _service.CompileAsync(sources, progress, _cts.Token);
+            string? suffix = string.IsNullOrWhiteSpace(NameSuffix) ? null : NameSuffix;
+            var results = await _service.CompileAsync(sources, progress, _cts.Token, suffix);
 
             ApplyResults(results);
 
