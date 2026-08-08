@@ -118,5 +118,8 @@ Behavior notes:
 - [x] Settings persist across restarts (atomic JSON, malformed recovery, legacy migration)
 - [x] No `System.Windows.Forms` / `Microsoft.Win32.Registry` in shared projects
 - [x] Resource casing (`Skeletons.txt`, `SongCategories.txt`) verified on case-sensitive FS
+- [x] UI never blocks on async work: no `.Wait()`/`GetAwaiter().GetResult()` in app projects
+      (enforced by a source-scan regression test); SGH load/extract/conversion runs off the
+      UI thread with cancellation + busy-state guarding; file pickers are timeout-guarded
 - [x] Wine/Proton prefix discovery + data-folder validation tested
 - [x] CLI parity: compile/extract/import flows tested against the same GH-Toolkit algorithms

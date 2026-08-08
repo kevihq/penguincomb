@@ -6,15 +6,21 @@ namespace Honeycomb.App.Services;
 
 /// <summary>
 /// Native file/folder pickers backed by Avalonia's StorageProvider (works on Linux,
-/// Windows and macOS without Wine). Requires a window owner, provided by the app.
+/// Windows and macOS without Wine). On Linux the picker is provided by the desktop
+/// portal service; when that service is missing or unresponsive the call is guarded
+/// by a timeout so the application can never freeze on a dialog.
 /// </summary>
 public class AvaloniaFileDialogService : IFileDialogService
 {
     private readonly Func<Window?> _windowProvider;
+    private readonly IUserNotificationService _notifications;
 
-    public AvaloniaFileDialogService(Func<Window?> windowProvider)
+    private static readonly TimeSpan PickerTimeout = TimeSpan.FromSeconds(45);
+
+    public AvaloniaFileDialogService(Func<Window?> windowProvider, IUserNotificationService notifications)
     {
         _windowProvider = windowProvider;
+        _notifications = notifications;
     }
 
     private IStorageProvider? GetStorage()
@@ -31,15 +37,28 @@ public class AvaloniaFileDialogService : IFileDialogService
             return null;
         }
 
-        var files = await storage.OpenFilePickerAsync(new FilePickerOpenOptions
+        try
         {
-            Title = options.Title,
-            AllowMultiple = false,
-            FileTypeFilter = ToFileTypes(options.Filters),
-            SuggestedStartLocation = ToFolder(options.InitialDirectory)
-        });
+            var files = await WithTimeout(
+                storage.OpenFilePickerAsync(new FilePickerOpenOptions
+                {
+                    Title = options.Title,
+                    AllowMultiple = false,
+                    FileTypeFilter = ToFileTypes(options.Filters),
+                    SuggestedStartLocation = ToFolder(options.InitialDirectory)
+                }));
 
-        return files.Count > 0 ? files[0].TryGetLocalPath() : null;
+            return files.Count > 0 ? files[0].TryGetLocalPath() : null;
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            return null;
+        }
+        catch (Exception ex)
+        {
+            await ReportPickerFailureAsync(ex, cancellationToken);
+            return null;
+        }
     }
 
     public async Task<IReadOnlyList<string>> PickOpenFilesAsync(FileDialogOptions options, CancellationToken cancellationToken = default)
@@ -50,15 +69,28 @@ public class AvaloniaFileDialogService : IFileDialogService
             return [];
         }
 
-        var files = await storage.OpenFilePickerAsync(new FilePickerOpenOptions
+        try
         {
-            Title = options.Title,
-            AllowMultiple = true,
-            FileTypeFilter = ToFileTypes(options.Filters),
-            SuggestedStartLocation = ToFolder(options.InitialDirectory)
-        });
+            var files = await WithTimeout(
+                storage.OpenFilePickerAsync(new FilePickerOpenOptions
+                {
+                    Title = options.Title,
+                    AllowMultiple = true,
+                    FileTypeFilter = ToFileTypes(options.Filters),
+                    SuggestedStartLocation = ToFolder(options.InitialDirectory)
+                }));
 
-        return files.Select(f => f.TryGetLocalPath() ?? "").Where(p => p.Length > 0).ToList();
+            return files.Select(f => f.TryGetLocalPath() ?? "").Where(p => p.Length > 0).ToList();
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            return [];
+        }
+        catch (Exception ex)
+        {
+            await ReportPickerFailureAsync(ex, cancellationToken);
+            return [];
+        }
     }
 
     public async Task<string?> PickSaveFileAsync(FileDialogOptions options, CancellationToken cancellationToken = default)
@@ -69,15 +101,28 @@ public class AvaloniaFileDialogService : IFileDialogService
             return null;
         }
 
-        var file = await storage.SaveFilePickerAsync(new FilePickerSaveOptions
+        try
         {
-            Title = options.Title,
-            SuggestedFileName = options.SuggestedFileName,
-            FileTypeChoices = ToFileTypes(options.Filters),
-            SuggestedStartLocation = ToFolder(options.InitialDirectory)
-        });
+            var file = await WithTimeout(
+                storage.SaveFilePickerAsync(new FilePickerSaveOptions
+                {
+                    Title = options.Title,
+                    SuggestedFileName = options.SuggestedFileName,
+                    FileTypeChoices = ToFileTypes(options.Filters),
+                    SuggestedStartLocation = ToFolder(options.InitialDirectory)
+                }));
 
-        return file?.TryGetLocalPath();
+            return file?.TryGetLocalPath();
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            return null;
+        }
+        catch (Exception ex)
+        {
+            await ReportPickerFailureAsync(ex, cancellationToken);
+            return null;
+        }
     }
 
     public async Task<string?> PickFolderAsync(string title, string? initialDirectory = null, CancellationToken cancellationToken = default)
@@ -88,14 +133,49 @@ public class AvaloniaFileDialogService : IFileDialogService
             return null;
         }
 
-        var folders = await storage.OpenFolderPickerAsync(new FolderPickerOpenOptions
+        try
         {
-            Title = title,
-            AllowMultiple = false,
-            SuggestedStartLocation = ToFolder(initialDirectory)
-        });
+            var folders = await WithTimeout(
+                storage.OpenFolderPickerAsync(new FolderPickerOpenOptions
+                {
+                    Title = title,
+                    AllowMultiple = false,
+                    SuggestedStartLocation = ToFolder(initialDirectory)
+                }));
 
-        return folders.Count > 0 ? folders[0].TryGetLocalPath() : null;
+            return folders.Count > 0 ? folders[0].TryGetLocalPath() : null;
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            return null;
+        }
+        catch (Exception ex)
+        {
+            await ReportPickerFailureAsync(ex, cancellationToken);
+            return null;
+        }
+    }
+
+    private async Task<T> WithTimeout<T>(Task<T> picker)
+    {
+        try
+        {
+            return await picker.WaitAsync(PickerTimeout);
+        }
+        catch (TimeoutException)
+        {
+            throw new TimeoutException(
+                "The file picker did not respond. On Linux this usually means the desktop portal " +
+                "(xdg-desktop-portal) service is not running or reachable. Please check your desktop " +
+                "session and try again.");
+        }
+    }
+
+    private Task ReportPickerFailureAsync(Exception ex, CancellationToken cancellationToken)
+    {
+        Console.WriteLine($"File picker failed: {ex.Message}");
+        return _notifications.ShowErrorAsync("File Picker Unavailable",
+            "The file/folder picker could not be opened.\n\n" + ex.Message, cancellationToken);
     }
 
     private static List<FilePickerFileType> ToFileTypes(IReadOnlyList<FileFilter> filters)

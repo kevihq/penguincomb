@@ -39,7 +39,9 @@ public static class ServiceCollectionExtensions
         services.AddSingleton(sp => new WindowAccessor(() => App.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop
             ? desktop.MainWindow
             : null));
-        services.AddSingleton<IFileDialogService>(sp => new AvaloniaFileDialogService(() => sp.GetRequiredService<WindowAccessor>().Current));
+        services.AddSingleton<IFileDialogService>(sp => new AvaloniaFileDialogService(
+            () => sp.GetRequiredService<WindowAccessor>().Current,
+            sp.GetRequiredService<IUserNotificationService>()));
         services.AddSingleton<IUserNotificationService>(sp => new AvaloniaNotificationService(() => sp.GetRequiredService<WindowAccessor>().Current));
 
         // ---- Game install locators (platform-specific, guarded at runtime) ----

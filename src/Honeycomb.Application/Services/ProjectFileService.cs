@@ -219,6 +219,25 @@ public class ProjectFileService
         }
 
         string json = await File.ReadAllTextAsync(filePath, cancellationToken);
+        return LoadProjectFromJson(json, filePath);
+    }
+
+    /// <summary>
+    /// Synchronous load used only during view-model construction, before the UI is
+    /// shown and while there is no async context to deadlock against.
+    /// </summary>
+    public SongProjectData? LoadProjectSync(string filePath)
+    {
+        if (!File.Exists(filePath))
+        {
+            return null;
+        }
+
+        return LoadProjectFromJson(File.ReadAllText(filePath), filePath);
+    }
+
+    private static SongProjectData? LoadProjectFromJson(string json, string filePath)
+    {
         var data = SongProjectData.FromJson(json);
         if (data is null)
         {

@@ -43,7 +43,20 @@ public partial class WadToolsViewModel : ObservableObject
     partial void OnRecompileQbChanged(bool value)
     {
         _settings.Settings.RecompileQb = value;
-        _settings.SaveAsync().Wait();
+        // The generated property setter cannot await; persist without blocking the UI thread.
+        _ = PersistSettingsAsync();
+    }
+
+    private async Task PersistSettingsAsync()
+    {
+        try
+        {
+            await _settings.SaveAsync();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Failed to save settings: {ex}");
+        }
     }
 
     [RelayCommand]

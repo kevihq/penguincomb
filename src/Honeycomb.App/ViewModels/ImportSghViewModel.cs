@@ -61,15 +61,23 @@ public partial class ImportSghViewModel : ObservableObject
             return;
         }
 
-        LoadSgh(path);
+        await LoadSghAsync(path, cancellationToken);
     }
 
-    public void LoadSgh(string path)
+    /// <summary>
+    /// Loads an SGH archive. Extraction/parsing runs off the UI thread and all
+    /// notifications are awaited properly, so the UI never freezes.
+    /// </summary>
+    public async Task LoadSghAsync(string path, CancellationToken cancellationToken = default)
     {
         SghPath = path;
+        IsBusy = true;
         try
         {
-            var result = _service.LoadSGH(path);
+            // Extraction + AES decrypt + QB decompile can take a while for large
+            // archives - never run it on the UI thread.
+            var result = await Task.Run(() => _service.LoadSGH(path), cancellationToken);
+
             Songs.Clear();
             foreach (var song in result.Songs)
             {
@@ -78,25 +86,38 @@ public partial class ImportSghViewModel : ObservableObject
 
             if (result.Duplicates.Count > 0)
             {
-                _notifications.ShowMessageAsync("Duplicates Found!",
-                    $"The following songs are duplicates and will not be imported:\n\n{string.Join("\n", result.Duplicates)}").Wait();
+                await _notifications.ShowMessageAsync("Duplicates Found!",
+                    $"The following songs are duplicates and will not be imported:\n\n{string.Join("\n", result.Duplicates)}", cancellationToken);
             }
 
             if (Songs.Count == 0)
             {
-                _notifications.ShowMessageAsync("No Songs Found", "No songs were found in the selected SGH file.").Wait();
+                await _notifications.ShowMessageAsync("No Songs Found", "No songs were found in the selected SGH file.", cancellationToken);
             }
+        }
+        catch (OperationCanceledException)
+        {
+            // cancelled
         }
         catch (Exception ex)
         {
             Console.WriteLine($"Failed to load SGH: {ex}");
-            _notifications.ShowErrorAsync("Import Failed", $"Could not read the SGH file:\n\n{ex.Message}").Wait();
+            await _notifications.ShowErrorAsync("Import Failed", $"Could not read the SGH file:\n\n{ex.Message}", cancellationToken);
+        }
+        finally
+        {
+            IsBusy = false;
         }
     }
 
     [RelayCommand]
     private async Task ConvertAsync(CancellationToken cancellationToken)
     {
+        if (IsBusy)
+        {
+            return;
+        }
+
         if (Songs.Count == 0)
         {
             await _notifications.ShowMessageAsync("No Songs Loaded", "No songs loaded!\n\nPlease import an SGH file first.", cancellationToken);
@@ -113,6 +134,10 @@ public partial class ImportSghViewModel : ObservableObject
                 return;
             }
             await _service.ConvertSongsAsync(SghPath, checkedSongs, ConsoleOptions[ConsoleIndex], null, cancellationToken);
+        }
+        catch (OperationCanceledException)
+        {
+            // cancelled
         }
         catch (Exception ex)
         {

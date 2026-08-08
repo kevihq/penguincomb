@@ -20,7 +20,8 @@ public partial class MainWindowViewModel : ObservableObject
 
     public string Version { get; } = typeof(MainWindowViewModel).Assembly.GetName().Version?.ToString(3) ?? "1.0.0";
 
-    public string FfmpegWarning { get; }
+    [ObservableProperty]
+    private string _ffmpegWarning = "";
 
     public MainWindowViewModel(
         IServiceProvider services,
@@ -33,40 +34,38 @@ public partial class MainWindowViewModel : ObservableObject
         var sink = services.GetService<ConsoleLogSink>();
         ConsoleLines = sink?.Lines ?? [];
 
-        string ffmpeg = CheckFfmpeg(toolLocator);
-        FfmpegWarning = string.IsNullOrEmpty(ffmpeg)
-            ? ""
-            : $"Note: {ffmpeg} was not found on your PATH. Audio compilation requires ffmpeg/ffprobe.";
+        // Availability check is fast, but never block startup on it.
+        _ = CheckToolsAsync(toolLocator);
     }
 
-    private static string CheckFfmpeg(IExternalToolLocator toolLocator)
+    private async Task CheckToolsAsync(IExternalToolLocator toolLocator)
     {
         try
         {
-            var availability = toolLocator.CheckAvailabilityAsync().GetAwaiter().GetResult();
+            var availability = await toolLocator.CheckAvailabilityAsync();
             if (!availability.FfmpegFound)
             {
-                return "ffmpeg";
+                FfmpegWarning = "Note: ffmpeg was not found on your PATH. Audio compilation requires ffmpeg/ffprobe (see Settings).";
             }
-            if (!availability.FfprobeFound)
+            else if (!availability.FfprobeFound)
             {
-                return "ffprobe";
+                FfmpegWarning = "Note: ffprobe was not found on your PATH. Audio compilation requires ffmpeg/ffprobe (see Settings).";
             }
         }
-        catch
+        catch (Exception ex)
         {
             // Availability check must never break startup
+            Console.WriteLine($"Tool availability check failed: {ex.Message}");
         }
-        return "";
     }
 
     [RelayCommand]
-    private void OpenCompileSong(string? inputFile = null)
+    private async Task OpenCompileSong(string? inputFile = null)
     {
         var vm = _services.GetRequiredService<CompileSongViewModel>();
         if (!string.IsNullOrEmpty(inputFile))
         {
-            vm.LoadProject(inputFile);
+            await vm.LoadProjectAsync(inputFile);
         }
         var window = new CompileSongWindow { DataContext = vm };
         window.Show();
@@ -78,7 +77,8 @@ public partial class MainWindowViewModel : ObservableObject
         var vm = _services.GetRequiredService<ImportSghViewModel>();
         if (!string.IsNullOrEmpty(inputFile))
         {
-            vm.LoadSgh(inputFile);
+            // Loading is async and runs off the UI thread; never block the click handler.
+            _ = vm.LoadSghAsync(inputFile);
         }
         var window = new ImportSghWindow { DataContext = vm };
         window.Show();

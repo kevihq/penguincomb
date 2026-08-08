@@ -27,16 +27,29 @@ public partial class App : Avalonia.Application
             Services = BuildServiceProvider();
             ConfigureLogging();
 
+            desktop.ShutdownMode = ShutdownMode.OnMainWindowClose;
+            _ = StartupAsync(desktop);
+        }
+
+        base.OnFrameworkInitializationCompleted();
+    }
+
+    private async Task StartupAsync(IClassicDesktopStyleApplicationLifetime desktop)
+    {
+        try
+        {
+            // Load settings before any view model reads them. Never block the UI
+            // thread on this: with the dispatcher sync context installed, waiting
+            // synchronously on async I/O can deadlock startup.
+            var settings = Services.GetRequiredService<Honeycomb.Application.Abstractions.ISettingsService>();
+            await settings.LoadAsync();
+
             var mainWindow = Services.GetRequiredService<MainWindow>();
             desktop.MainWindow = mainWindow;
-
-            var settings = Services.GetRequiredService<Honeycomb.Application.Abstractions.ISettingsService>();
-            settings.LoadAsync().GetAwaiter().GetResult();
 
             var mainVm = Services.GetRequiredService<MainWindowViewModel>();
             mainWindow.DataContext = mainVm;
             mainWindow.Show();
-            desktop.ShutdownMode = ShutdownMode.OnMainWindowClose;
 
             // Command-line opening of .ghproj / .sgh files
             string[] args = Environment.GetCommandLineArgs();
@@ -45,8 +58,25 @@ public partial class App : Avalonia.Application
                 mainVm.OpenInputFile(args[1]);
             }
         }
-
-        base.OnFrameworkInitializationCompleted();
+        catch (Exception ex)
+        {
+            // A startup failure must be visible, never a silent hang.
+            Console.WriteLine($"Startup failed: {ex}");
+            var error = new Avalonia.Controls.TextBlock
+            {
+                Text = $"Honeycomb failed to start:\n\n{ex.Message}",
+                TextWrapping = Avalonia.Media.TextWrapping.Wrap,
+                Margin = new Avalonia.Thickness(16)
+            };
+            desktop.MainWindow = new Avalonia.Controls.Window
+            {
+                Title = "Honeycomb - Startup Error",
+                Content = error,
+                Width = 480,
+                Height = 220
+            };
+            desktop.MainWindow.Show();
+        }
     }
 
     private static ServiceProvider BuildServiceProvider()

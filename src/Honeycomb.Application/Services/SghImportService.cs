@@ -110,34 +110,25 @@ public class SghImportService
     /// <param name="console">"PC", "360" or "PS3" (matches the legacy console selector).</param>
     public async Task ConvertSongsAsync(string sghPath, IReadOnlyList<string> selectedSongs, string console, IProgress<string>? progress = null, CancellationToken ct = default)
     {
-        var masterList = LoadSGH(sghPath).Songs.ToDictionary(s => s.Name, s => s.Data);
-
-        if (masterList.Count == 0)
-        {
-            await _notifications.ShowMessageAsync("No Songs Loaded", "No songs loaded!\n\nPlease import an SGH file first.", ct);
-            return;
-        }
-
-        var toImport = new List<QBStruct.QBStructData>();
         string compilePath = Path.Combine(Path.GetDirectoryName(sghPath)!, Path.GetFileNameWithoutExtension(sghPath));
         string game = GAME_GH3;
-        Dictionary<string, QBItem>? sectionDict = null;
 
         try
         {
-            Directory.CreateDirectory(compilePath);
-            Console.WriteLine("Extracting all songs from SGH file...");
-            progress?.Report("Extracting all songs from SGH file...");
-            GHTCP.ExtractSghZip(sghPath, compilePath, out _);
+            // The extraction-heavy prologue (the archive is extracted twice: once for
+            // the song list, once for the song files) runs off the UI thread. All
+            // interactive prompts below stay on the caller's thread.
+            var prep = await Task.Run(() => PrepareCompile(sghPath, progress), ct);
+            var masterList = prep.MasterList;
+            var sectionDict = prep.SectionDict;
 
-            var sectionPath = Path.Combine(compilePath, "sections.q");
-            if (File.Exists(sectionPath))
+            if (masterList.Count == 0)
             {
-                var (qbFile, _) = QB.ParseQFromFile(sectionPath);
-                sectionDict = QB.QbEntryDict(qbFile);
+                await _notifications.ShowMessageAsync("No Songs Loaded", "No songs loaded!\n\nPlease import an SGH file first.", ct);
+                return;
             }
 
-            DeleteTempFiles(compilePath);
+            var toImport = new List<QBStruct.QBStructData>();
 
             var failedSongs = new List<string>();
             var badNames = ForbiddenChecksums.GetForbiddenChecksums(game);
@@ -221,48 +212,55 @@ public class SghImportService
                 await _checks.OnyxCheckAsync(ct);
                 string sghName = $"{compilePath}_{console}";
                 string sghFolderName = CreateForGame.ReplaceNonAlphanumeric(Path.GetFileName(compilePath));
-                CreateConsoleDownloadFilesGh3(checksum, GAME_GH3, console, compilePath, _resources.ResourcesPath, toImport);
-                string[] onyxArgs;
 
-                if (console == CONSOLE_PS3)
+                // Console packaging (per-song PAK compilation + Onyx invocation) is slow;
+                // run it off the UI thread. OnyxCheckAsync above keeps the interactive
+                // part on the UI thread.
+                await Task.Run(() =>
                 {
-                    string gameFiles = Path.Combine(compilePath, "USRDIR", sghFolderName.ToUpper());
-                    Directory.CreateDirectory(gameFiles);
-                    string ps3Resources = Path.Combine(_resources.ResourcesPath, "PS3");
-                    string currGameResources = Path.Combine(ps3Resources, game);
-                    string vramFile = Path.Combine(ps3Resources, $"VRAM_{game}");
-                    if (!Directory.Exists(ps3Resources) || !Directory.Exists(currGameResources))
-                    {
-                        throw new Exception("Cannot find PS3 Resource folder.\n\nThis should be included with your toolkit.\nPlease re-download the toolkit.");
-                    }
+                    CreateConsoleDownloadFilesGh3(checksum, GAME_GH3, console, compilePath, _resources.ResourcesPath, toImport);
+                    string[] onyxArgs;
 
-                    string contentID = FileCreation.GetPs3Key(GAME_GH3) + $"-{checksum.ToString().PadLeft(16, '0')}";
-                    foreach (var file in Directory.GetFiles(compilePath))
+                    if (console == CONSOLE_PS3)
                     {
-                        File.Move(file, Path.Combine(gameFiles, $"{Path.GetFileName(file)}.PS3".ToUpper()), true);
-                        string fileExtension = Path.GetExtension(file);
-                        string fileNoExt = Path.GetFileNameWithoutExtension(file).ToLower();
-                        bool localeFile = fileNoExt.Contains("_text") && !fileNoExt.EndsWith("_text");
-                        if (fileExtension.ToLower() == ".pak" && !localeFile)
+                        string gameFiles = Path.Combine(compilePath, "USRDIR", sghFolderName.ToUpper());
+                        Directory.CreateDirectory(gameFiles);
+                        string ps3Resources = Path.Combine(_resources.ResourcesPath, "PS3");
+                        string currGameResources = Path.Combine(ps3Resources, game);
+                        string vramFile = Path.Combine(ps3Resources, $"VRAM_{game}");
+                        if (!Directory.Exists(ps3Resources) || !Directory.Exists(currGameResources))
                         {
-                            File.Copy(vramFile, Path.Combine(gameFiles, $"{fileNoExt}_VRAM.PAK.PS3".ToUpper()), true);
+                            throw new Exception("Cannot find PS3 Resource folder.\n\nThis should be included with your toolkit.\nPlease re-download the toolkit.");
                         }
-                    }
-                    foreach (string file in Directory.GetFiles(currGameResources))
-                    {
-                        File.Copy(file, Path.Combine(compilePath, Path.GetFileName(file)), true);
-                    }
-                    onyxArgs = ["pkg", contentID, compilePath, "--to", sghName + ".PKG"];
-                }
-                else
-                {
-                    onyxArgs = ["stfs", compilePath, "--to", sghName];
-                    AddExtension(compilePath, ".xen");
-                }
 
-                Console.WriteLine("Creating package file...");
-                progress?.Report("Creating package file...");
-                CreateForGame.CompileWithOnyx(Pref.OnyxCliPath, onyxArgs);
+                        string contentID = FileCreation.GetPs3Key(GAME_GH3) + $"-{checksum.ToString().PadLeft(16, '0')}";
+                        foreach (var file in Directory.GetFiles(compilePath))
+                        {
+                            File.Move(file, Path.Combine(gameFiles, $"{Path.GetFileName(file)}.PS3".ToUpper()), true);
+                            string fileExtension = Path.GetExtension(file);
+                            string fileNoExt = Path.GetFileNameWithoutExtension(file).ToLower();
+                            bool localeFile = fileNoExt.Contains("_text") && !fileNoExt.EndsWith("_text");
+                            if (fileExtension.ToLower() == ".pak" && !localeFile)
+                            {
+                                File.Copy(vramFile, Path.Combine(gameFiles, $"{fileNoExt}_VRAM.PAK.PS3".ToUpper()), true);
+                            }
+                        }
+                        foreach (string file in Directory.GetFiles(currGameResources))
+                        {
+                            File.Copy(file, Path.Combine(compilePath, Path.GetFileName(file)), true);
+                        }
+                        onyxArgs = ["pkg", contentID, compilePath, "--to", sghName + ".PKG"];
+                    }
+                    else
+                    {
+                        onyxArgs = ["stfs", compilePath, "--to", sghName];
+                        AddExtension(compilePath, ".xen");
+                    }
+
+                    Console.WriteLine("Creating package file...");
+                    progress?.Report("Creating package file...");
+                    CreateForGame.CompileWithOnyx(Pref.OnyxCliPath, onyxArgs);
+                }, ct);
             }
 
             await _notifications.ShowMessageAsync("Conversion Complete",
@@ -276,6 +274,34 @@ public class SghImportService
             }
         }
     }
+
+    /// <summary>
+    /// Extraction-heavy prologue of <see cref="ConvertSongsAsync"/>. Runs on a
+    /// background thread and contains no user interaction.
+    /// </summary>
+    private CompilePrep PrepareCompile(string sghPath, IProgress<string>? progress)
+    {
+        var masterList = LoadSGH(sghPath).Songs.ToDictionary(s => s.Name, s => s.Data);
+        string compilePath = Path.Combine(Path.GetDirectoryName(sghPath)!, Path.GetFileNameWithoutExtension(sghPath));
+
+        Console.WriteLine("Extracting all songs from SGH file...");
+        progress?.Report("Extracting all songs from SGH file...");
+        Directory.CreateDirectory(compilePath);
+        GHTCP.ExtractSghZip(sghPath, compilePath, out _);
+
+        Dictionary<string, QBItem>? sectionDict = null;
+        var sectionPath = Path.Combine(compilePath, "sections.q");
+        if (File.Exists(sectionPath))
+        {
+            var (qbFile, _) = QB.ParseQFromFile(sectionPath);
+            sectionDict = QB.QbEntryDict(qbFile);
+        }
+
+        DeleteTempFiles(compilePath);
+        return new CompilePrep(masterList, sectionDict);
+    }
+
+    private sealed record CompilePrep(Dictionary<string, QBStruct.QBStructData> MasterList, Dictionary<string, QBItem>? SectionDict);
 
     /// <summary>Re-maps section names inside the song's mid.qb using sections.q (ported marker remap).</summary>
     internal static void RemapSections(string songPath, string songName, Dictionary<string, QBItem> sectionDict, string game)

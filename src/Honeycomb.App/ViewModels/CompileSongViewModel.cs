@@ -93,7 +93,20 @@ public partial class CompileSongViewModel : ObservableObject
         };
 
         _projects.EnsureDefaultTemplate(Data);
-        LoadProject(_projects.DefaultTemplatePath, isTemplate: true);
+        // Tiny synchronous read during construction (before the UI is shown); the
+        // async path is only used once the dispatcher is pumping.
+        try
+        {
+            var data = _projects.LoadProjectSync(_projects.DefaultTemplatePath);
+            if (data is not null)
+            {
+                ApplyData(data, isTemplate: true);
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Failed to load default template: {ex.Message}");
+        }
     }
 
     private static string[] LoadList(string path, string[] fallback)
@@ -752,11 +765,11 @@ public partial class CompileSongViewModel : ObservableObject
 
         if (field == "modsSubfolder")
         {
-            ValidateModsSubfolder();
+            await ValidateModsSubfolder();
         }
     }
 
-    private void ValidateModsSubfolder()
+    private async Task ValidateModsSubfolder()
     {
         try
         {
@@ -784,7 +797,7 @@ public partial class CompileSongViewModel : ObservableObject
         catch (Exception ex)
         {
             Data.modsSubfolder = "";
-            _notifications.ShowErrorAsync("Mods Subfolder Error", ex.Message).Wait();
+            await _notifications.ShowErrorAsync("Mods Subfolder Error", ex.Message);
         }
     }
 
@@ -871,23 +884,29 @@ public partial class CompileSongViewModel : ObservableObject
     private static IEnumerable<string> Split(string? joined) =>
         string.IsNullOrEmpty(joined) ? [] : joined.Split(';', StringSplitOptions.RemoveEmptyEntries);
 
-    public void LoadProject(string path, bool isTemplate = false)
+    public async Task LoadProjectAsync(string path, bool isTemplate = false)
     {
         try
         {
-            var data = _projects.LoadProjectAsync(path).GetAwaiter().GetResult();
+            var data = await _projects.LoadProjectAsync(path);
             if (data is null)
             {
                 return;
             }
 
             _isLoading = true;
-            ApplyData(data, isTemplate);
-            _isLoading = false;
+            try
+            {
+                ApplyData(data, isTemplate);
+            }
+            finally
+            {
+                _isLoading = false;
+            }
         }
         catch (Exception ex)
         {
-            _notifications.ShowErrorAsync("Load Failed", $"Could not load the project file:\n\n{ex.Message}").Wait();
+            await _notifications.ShowErrorAsync("Load Failed", $"Could not load the project file:\n\n{ex.Message}");
         }
     }
 
@@ -967,14 +986,14 @@ public partial class CompileSongViewModel : ObservableObject
         }, cancellationToken);
         if (path is not null)
         {
-            LoadProject(path);
+            await LoadProjectAsync(path);
         }
     }
 
     [RelayCommand]
-    private void NewProject()
+    private async Task NewProjectAsync()
     {
-        LoadProject(_projects.DefaultTemplatePath, isTemplate: true);
+        await LoadProjectAsync(_projects.DefaultTemplatePath, isTemplate: true);
     }
 
     [RelayCommand]
@@ -1008,7 +1027,7 @@ public partial class CompileSongViewModel : ObservableObject
         }, cancellationToken);
         if (path is not null)
         {
-            LoadProject(path, isTemplate: true);
+            await LoadProjectAsync(path, isTemplate: true);
             Data.projectPath = "";
         }
     }
@@ -1147,7 +1166,7 @@ public partial class CompileSongViewModel : ObservableObject
 
             if (result.Success && _settings.Settings.ShowPostCompile && !options.IsAudioCompile)
             {
-                ShowPostCompile(options);
+                await ShowPostCompile(options);
             }
         }
         finally
@@ -1157,7 +1176,7 @@ public partial class CompileSongViewModel : ObservableObject
         }
     }
 
-    private void ShowPostCompile(CompileOptions options)
+    private async Task ShowPostCompile(CompileOptions options)
     {
         string title;
         string message;
@@ -1177,7 +1196,7 @@ public partial class CompileSongViewModel : ObservableObject
             message = "Compilation has completed successfully!\n\nYour song has been packaged up and is ready to be installed on your console.\n\nIt can be found where you defined the song to be compiled to or next to your .ghproj file.\n\nDon't forget to add it to your custom cache!";
         }
 
-        _notifications.ShowMessageAsync(title, message).Wait();
+        await _notifications.ShowMessageAsync(title, message);
     }
 
     private Window? GetOwnerWindow() =>
