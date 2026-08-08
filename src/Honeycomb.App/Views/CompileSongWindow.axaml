@@ -210,18 +210,18 @@
                                 <TextBox Grid.Column="1" Text="{Binding Data.previewAudioPathGh3}" />
                                 <Button Grid.Column="2" Content="..." Command="{Binding BrowseCommand}" CommandParameter="previewAudioPathGh3" Margin="4,0,0,0" />
                             </Grid>
-                            <StackPanel Orientation="Horizontal" Spacing="6" IsEnabled="{Binding IsGh3PreviewFieldsEnabled}">
-                                <TextBlock Text="Preview Start:" VerticalAlignment="Center" />
-                                <NumericUpDown Value="{Binding PreviewMinutesGh3}" Minimum="0" Maximum="59" Width="80" FormatString="0" />
-                                <NumericUpDown Value="{Binding PreviewSecondsGh3}" Minimum="0" Maximum="59" Width="80" FormatString="0" />
-                                <NumericUpDown Value="{Binding PreviewMillsGh3}" Minimum="0" Maximum="999" Width="96" FormatString="0" />
+                            <StackPanel Orientation="Horizontal" Spacing="8" IsEnabled="{Binding IsGh3PreviewFieldsEnabled}">
+                                <TextBlock Text="Preview Start:" VerticalAlignment="Center" FontSize="14" />
+                                <NumericUpDown Value="{Binding PreviewMinutesGh3}" Minimum="0" Maximum="59" Width="120" Height="38" FontSize="16" FormatString="0" ToolTip.Tip="Minutes" />
+                                <NumericUpDown Value="{Binding PreviewSecondsGh3}" Minimum="0" Maximum="59" Width="120" Height="38" FontSize="16" FormatString="0" ToolTip.Tip="Seconds" />
+                                <NumericUpDown Value="{Binding PreviewMillsGh3}" Minimum="0" Maximum="999" Width="140" Height="38" FontSize="16" FormatString="0" ToolTip.Tip="Milliseconds" />
                             </StackPanel>
-                            <StackPanel Orientation="Horizontal" Spacing="6" IsEnabled="{Binding IsGh3PreviewFieldsEnabled}">
-                                <TextBlock Text="Length:" VerticalAlignment="Center" />
-                                <NumericUpDown Value="{Binding LengthMinutesGh3}" Minimum="0" Maximum="59" Width="80" FormatString="0" />
-                                <NumericUpDown Value="{Binding LengthSecondsGh3}" Minimum="0" Maximum="59" Width="80" FormatString="0" />
-                                <NumericUpDown Value="{Binding LengthMillsGh3}" Minimum="0" Maximum="999" Width="96" FormatString="0" />
-                                <CheckBox Content="Set End Time" IsChecked="{Binding SetEnd}" VerticalAlignment="Center" />
+                            <StackPanel Orientation="Horizontal" Spacing="8" IsEnabled="{Binding IsGh3PreviewFieldsEnabled}">
+                                <TextBlock Text="Length:" VerticalAlignment="Center" FontSize="14" />
+                                <NumericUpDown Value="{Binding LengthMinutesGh3}" Minimum="0" Maximum="59" Width="120" Height="38" FontSize="16" FormatString="0" ToolTip.Tip="Minutes" />
+                                <NumericUpDown Value="{Binding LengthSecondsGh3}" Minimum="0" Maximum="59" Width="120" Height="38" FontSize="16" FormatString="0" ToolTip.Tip="Seconds" />
+                                <NumericUpDown Value="{Binding LengthMillsGh3}" Minimum="0" Maximum="999" Width="140" Height="38" FontSize="16" FormatString="0" ToolTip.Tip="Milliseconds" />
+                                <CheckBox Content="Set End Time" IsChecked="{Binding SetEnd}" VerticalAlignment="Center" FontSize="14" />
                             </StackPanel>
                             <Grid ColumnDefinitions="120,*">
                                 <TextBlock Text="Vol (dB):" VerticalAlignment="Center" />
@@ -351,18 +351,18 @@
                                 <TextBox Grid.Column="1" Text="{Binding Data.previewAudioPath}" />
                                 <Button Grid.Column="2" Content="..." Command="{Binding BrowseCommand}" CommandParameter="previewAudioPath" Margin="4,0,0,0" />
                             </Grid>
-                            <StackPanel Orientation="Horizontal" Spacing="6" IsEnabled="{Binding IsPreviewFieldsEnabled}">
-                                <TextBlock Text="Preview Start:" VerticalAlignment="Center" />
-                                <NumericUpDown Value="{Binding PreviewMinutes}" Minimum="0" Maximum="59" Width="80" FormatString="0" />
-                                <NumericUpDown Value="{Binding PreviewSeconds}" Minimum="0" Maximum="59" Width="80" FormatString="0" />
-                                <NumericUpDown Value="{Binding PreviewMills}" Minimum="0" Maximum="999" Width="96" FormatString="0" />
+                            <StackPanel Orientation="Horizontal" Spacing="8" IsEnabled="{Binding IsPreviewFieldsEnabled}">
+                                <TextBlock Text="Preview Start:" VerticalAlignment="Center" FontSize="14" />
+                                <NumericUpDown Value="{Binding PreviewMinutes}" Minimum="0" Maximum="59" Width="120" Height="38" FontSize="16" FormatString="0" ToolTip.Tip="Minutes" />
+                                <NumericUpDown Value="{Binding PreviewSeconds}" Minimum="0" Maximum="59" Width="120" Height="38" FontSize="16" FormatString="0" ToolTip.Tip="Seconds" />
+                                <NumericUpDown Value="{Binding PreviewMills}" Minimum="0" Maximum="999" Width="140" Height="38" FontSize="16" FormatString="0" ToolTip.Tip="Milliseconds" />
                             </StackPanel>
-                            <StackPanel Orientation="Horizontal" Spacing="6" IsEnabled="{Binding IsPreviewFieldsEnabled}">
-                                <TextBlock Text="Length:" VerticalAlignment="Center" />
-                                <NumericUpDown Value="{Binding LengthMinutes}" Minimum="0" Maximum="59" Width="80" FormatString="0" />
-                                <NumericUpDown Value="{Binding LengthSeconds}" Minimum="0" Maximum="59" Width="80" FormatString="0" />
-                                <NumericUpDown Value="{Binding LengthMills}" Minimum="0" Maximum="999" Width="96" FormatString="0" />
-                                <CheckBox Content="Set End Time" IsChecked="{Binding SetEnd}" VerticalAlignment="Center" />
+                            <StackPanel Orientation="Horizontal" Spacing="8" IsEnabled="{Binding IsPreviewFieldsEnabled}">
+                                <TextBlock Text="Length:" VerticalAlignment="Center" FontSize="14" />
+                                <NumericUpDown Value="{Binding LengthMinutes}" Minimum="0" Maximum="59" Width="120" Height="38" FontSize="16" FormatString="0" ToolTip.Tip="Minutes" />
+                                <NumericUpDown Value="{Binding LengthSeconds}" Minimum="0" Maximum="59" Width="120" Height="38" FontSize="16" FormatString="0" ToolTip.Tip="Seconds" />
+                                <NumericUpDown Value="{Binding LengthMills}" Minimum="0" Maximum="999" Width="140" Height="38" FontSize="16" FormatString="0" ToolTip.Tip="Milliseconds" />
+                                <CheckBox Content="Set End Time" IsChecked="{Binding SetEnd}" VerticalAlignment="Center" FontSize="14" />
                             </StackPanel>
                             <Grid ColumnDefinitions="120,*">
                                 <TextBlock Text="Vol (dB):" VerticalAlignment="Center" />
