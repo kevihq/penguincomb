@@ -29,18 +29,18 @@ jobs:
           dotnet-version: '8.0.x'
 
       - name: Restore
-        run: dotnet restore Honeycomb.sln
+        run: dotnet restore PenguinComb.sln
 
       - name: Build (Release)
-        run: dotnet build Honeycomb.sln -c Release --no-restore
+        run: dotnet build PenguinComb.sln -c Release --no-restore
 
       - name: Run tests
-        run: dotnet test Honeycomb.sln -c Release --no-build
+        run: dotnet test PenguinComb.sln -c Release --no-build
 
       - name: Verify no WinForms/Registry leaks in shared projects
         if: runner.os == 'Linux'
         run: |
-          if grep -rn "System.Windows.Forms\|Microsoft.Win32.Registry" src/Honeycomb.Application src/Honeycomb.App --include="*.cs" ; then
+          if grep -rn "System.Windows.Forms\|Microsoft.Win32.Registry" src/PenguinComb.Application src/PenguinComb.App --include="*.cs" ; then
             echo "::error::Shared projects must not reference WinForms or the Windows Registry."
             exit 1
           fi
@@ -49,10 +49,10 @@ jobs:
       - name: Verify Linux resource casing
         if: runner.os == 'Linux'
         run: |
-          test -f "src/Honeycomb.App/List Files/Skeletons.txt"
-          test -f "src/Honeycomb.App/List Files/SongCategories.txt"
-          grep -rn "skeletons.txt" src/Honeycomb.Application --include="*.cs" && exit 1 || true
-          grep -rn "songcategories.txt" src/Honeycomb.Application --include="*.cs" && exit 1 || true
+          test -f "src/PenguinComb.App/List Files/Skeletons.txt"
+          test -f "src/PenguinComb.App/List Files/SongCategories.txt"
+          grep -rn "skeletons.txt" src/PenguinComb.Application --include="*.cs" && exit 1 || true
+          grep -rn "songcategories.txt" src/PenguinComb.Application --include="*.cs" && exit 1 || true
           echo "Resource casing verified."
 
       - name: Publish Linux x64
@@ -66,7 +66,7 @@ jobs:
       - name: Verify AppImage integrity
         if: runner.os == 'Linux'
         run: |
-          APPIMAGE=$(ls artifacts/Honeycomb-*-x86_64.AppImage | head -1)
+          APPIMAGE=$(ls artifacts/PenguinComb-*-x86_64.AppImage | head -1)
           test -n "$APPIMAGE"
           MAGIC=$(dd if="$APPIMAGE" bs=1 skip=8 count=3 2>/dev/null)
           if [ "$MAGIC" != "AI" ]; then
@@ -79,21 +79,21 @@ jobs:
       - name: Publish Windows x64
         if: runner.os == 'Windows'
         run: |
-          dotnet publish src/Honeycomb.App/Honeycomb.App.csproj -c Release -r win-x64 --self-contained false -o artifacts/publish-win-x64
-          Compress-Archive -Path artifacts/publish-win-x64 -DestinationPath artifacts/honeycomb-win-x64.zip
+          dotnet publish src/PenguinComb.App/PenguinComb.App.csproj -c Release -r win-x64 --self-contained false -o artifacts/publish-win-x64
+          Compress-Archive -Path artifacts/publish-win-x64 -DestinationPath artifacts/penguincomb-win-x64.zip
 
       - name: Upload Linux artifacts
         if: runner.os == 'Linux'
         uses: actions/upload-artifact@v4
         with:
-          name: honeycomb-linux-x64
+          name: penguincomb-linux-x64
           path: |
-            artifacts/honeycomb-linux-x64.tar.gz
-            artifacts/Honeycomb-*-x86_64.AppImage
+            artifacts/penguincomb-linux-x64.tar.gz
+            artifacts/PenguinComb-*-x86_64.AppImage
 
       - name: Upload Windows artifacts
         if: runner.os == 'Windows'
         uses: actions/upload-artifact@v4
         with:
-          name: honeycomb-win-x64
-          path: artifacts/honeycomb-win-x64.zip
+          name: penguincomb-win-x64
+          path: artifacts/penguincomb-win-x64.zip

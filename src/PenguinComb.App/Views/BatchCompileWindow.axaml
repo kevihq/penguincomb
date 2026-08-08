@@ -1,0 +1,60 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:PenguinComb.App.ViewModels"
+        x:Class="PenguinComb.App.Views.BatchCompileWindow"
+        x:DataType="vm:BatchCompileViewModel"
+        Title="Batch Compile"
+        Width="800"
+        Height="540"
+        MinWidth="620"
+        MinHeight="440"
+        Icon="/Assets/penguincomb.ico"
+        WindowStartupLocation="CenterOwner">
+
+    <DockPanel Margin="10">
+
+        <StackPanel DockPanel.Dock="Bottom" Spacing="8">
+            <Grid ColumnDefinitions="Auto,*,Auto">
+                <TextBlock Text="Song name suffix:" VerticalAlignment="Center" ToolTip.Tip="Appended to the end of every imported Clone Hero song name, e.g. GH 2 becomes 'My Song - GH 2' (applies to Clone Hero songs only)." />
+                <TextBox Grid.Column="1" Text="{Binding NameSuffix}" Margin="8,0" Width="220" HorizontalAlignment="Left"
+                         IsEnabled="{Binding IsBusy, Converter={x:Static BoolConverters.Not}}"
+                         Watermark="e.g. GH 2" />
+                <TextBlock Grid.Column="2" Text="(Clone Hero songs only)" VerticalAlignment="Center" Foreground="#888" FontSize="11" />
+            </Grid>
+
+            <TextBlock Text="{Binding StatusText}" TextWrapping="Wrap" />
+            <ProgressBar Minimum="0" Maximum="{Binding ProgressMaximum}" Value="{Binding ProgressValue}" Height="8" />
+
+            <WrapPanel Orientation="Horizontal">
+                <Button Content="Add .ghproj Files..." Command="{Binding AddFilesCommand}" IsEnabled="{Binding IsBusy, Converter={x:Static BoolConverters.Not}}" Margin="0,0,6,4" />
+                <Button Content="Add Clone Hero Songs..." Command="{Binding AddChSongsCommand}" IsEnabled="{Binding IsBusy, Converter={x:Static BoolConverters.Not}}" Margin="0,0,6,4" />
+                <Button Content="Add Clone Hero Folder..." Command="{Binding AddChLibraryCommand}" IsEnabled="{Binding IsBusy, Converter={x:Static BoolConverters.Not}}" Margin="0,0,6,4" />
+                <Button Content="Remove" Command="{Binding RemoveSelectedCommand}" IsEnabled="{Binding IsBusy, Converter={x:Static BoolConverters.Not}}" Margin="0,0,6,4" />
+                <Button Content="Clear" Command="{Binding ClearCommand}" IsEnabled="{Binding IsBusy, Converter={x:Static BoolConverters.Not}}" Margin="0,0,6,4" />
+                <Button Content="Compile All" Classes="accent" Command="{Binding CompileAllCommand}" Margin="0,0,6,4" />
+                <Button Content="Cancel" Command="{Binding CancelCommand}" IsEnabled="{Binding IsBusy}" Margin="0,0,6,4" />
+            </WrapPanel>
+        </StackPanel>
+
+        <TextBlock DockPanel.Dock="Top" Text="Songs to compile:" FontWeight="SemiBold" Margin="0,0,0,6" />
+
+        <Border BorderBrush="#888" BorderThickness="1" CornerRadius="4">
+            <ListBox ItemsSource="{Binding Songs}"
+                     SelectedItem="{Binding SelectedSong}"
+                     ScrollViewer.VerticalScrollBarVisibility="Auto">
+                <ListBox.ItemTemplate>
+                    <DataTemplate>
+                        <Grid ColumnDefinitions="*,90,80,*" Margin="2">
+                            <TextBlock Text="{Binding SongName}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                            <TextBlock Grid.Column="1" Text="{Binding KindText}" VerticalAlignment="Center" Foreground="#888" FontSize="11" />
+                            <TextBlock Grid.Column="2" Text="{Binding Status}" VerticalAlignment="Center" FontWeight="SemiBold" />
+                            <TextBlock Grid.Column="3" Text="{Binding Error}" VerticalAlignment="Center" Foreground="#b22222"
+                                       TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Error}" />
+                        </Grid>
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
+        </Border>
+
+    </DockPanel>
+</Window>

@@ -11,7 +11,7 @@
 #     we invoke appimagetool with --appimage-extract-and-run.
 #
 # Usage: scripts/build-appimage.sh
-# Output: artifacts/Honeycomb-<version>-x86_64.AppImage
+# Output: artifacts/PenguinComb-<version>-x86_64.AppImage
 set -e
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -25,14 +25,14 @@ APPIMAGETOOL_URL="${APPIMAGETOOL_URL:-https://github.com/AppImage/appimagetool/r
 APPIMAGETOOL_SHA256="a6d71e2b6cd66f8e8d16c37ad164658985e0cf5fcaa950c90a482890cb9d13e0"
 
 export MSBUILDDISABLENODEREUSE=1
-VERSION="$(grep -oE '<Version>[^<]+' "$ROOT/src/Honeycomb.App/Honeycomb.App.csproj" 2>/dev/null | sed 's/<Version>//' || true)"
+VERSION="$(grep -oE '<Version>[^<]+' "$ROOT/src/PenguinComb.App/PenguinComb.App.csproj" 2>/dev/null | sed 's/<Version>//' || true)"
 if [ -z "$VERSION" ]; then
     VERSION="1.0.0"
 fi
 
 # ---- 1. Self-contained publish ----
 echo "Publishing self-contained build for $RID ..."
-dotnet publish "$ROOT/src/Honeycomb.App/Honeycomb.App.csproj" \
+dotnet publish "$ROOT/src/PenguinComb.App/PenguinComb.App.csproj" \
     -c Release -r "$RID" --self-contained true -p:PublishSingleFile=false -m:1 \
     -o "$OUT/appimage-stage/publish"
 
@@ -57,21 +57,21 @@ mkdir -p "$APPDIR/usr/bin" "$APPDIR/usr/share/applications" "$APPDIR/usr/share/i
 # All publish output (apphost + dlls + resources) goes into usr/bin; the app
 # resolves bundled resources relative to AppContext.BaseDirectory.
 cp -r "$OUT/appimage-stage/publish/." "$APPDIR/usr/bin/"
-chmod +x "$APPDIR/usr/bin/Honeycomb"
+chmod +x "$APPDIR/usr/bin/PenguinComb"
 
-cp "$ROOT/packaging/linux/honeycomb.desktop" "$APPDIR/usr/share/applications/honeycomb.desktop"
-cp "$ROOT/packaging/linux/honeycomb.svg" "$APPDIR/usr/share/icons/hicolor/scalable/apps/honeycomb.svg"
+cp "$ROOT/packaging/linux/penguincomb.desktop" "$APPDIR/usr/share/applications/penguincomb.desktop"
+cp "$ROOT/packaging/linux/penguincomb.svg" "$APPDIR/usr/share/icons/hicolor/scalable/apps/penguincomb.svg"
 
 # AppImage root copies of desktop entry + icon (required by the spec)
-cp "$ROOT/packaging/linux/honeycomb.desktop" "$APPDIR/honeycomb.desktop"
-cp "$ROOT/packaging/linux/honeycomb.svg" "$APPDIR/honeycomb.svg"
+cp "$ROOT/packaging/linux/penguincomb.desktop" "$APPDIR/penguincomb.desktop"
+cp "$ROOT/packaging/linux/penguincomb.svg" "$APPDIR/penguincomb.svg"
 
 cat > "$APPDIR/AppRun" <<'EOF'
 #!/bin/sh
-# Launcher for the Honeycomb AppImage. APPDIR is set by the AppImage runtime
+# Launcher for the PenguinComb AppImage. APPDIR is set by the AppImage runtime
 # (or by --appimage-extract-and-run); the bundled resources resolve relative
 # to the executable, so no working-directory assumptions are made.
-exec "$APPDIR/usr/bin/Honeycomb" "$@"
+exec "$APPDIR/usr/bin/PenguinComb" "$@"
 EOF
 chmod +x "$APPDIR/AppRun"
 
@@ -80,9 +80,9 @@ echo "Building AppImage ..."
 cd "$OUT/appimage-stage"
 ARCH=x86_64 "$APPIMAGETOOL" --appimage-extract-and-run --no-appstream "$APPDIR" >/dev/null
 
-RESULT="$OUT/Honeycomb-$VERSION-x86_64.AppImage"
-if [ -f "$OUT/appimage-stage/Honeycomb-x86_64.AppImage" ]; then
-    mv "$OUT/appimage-stage/Honeycomb-x86_64.AppImage" "$RESULT"
+RESULT="$OUT/PenguinComb-$VERSION-x86_64.AppImage"
+if [ -f "$OUT/appimage-stage/PenguinComb-x86_64.AppImage" ]; then
+    mv "$OUT/appimage-stage/PenguinComb-x86_64.AppImage" "$RESULT"
 elif [ -f "$RESULT" ]; then
     :
 else

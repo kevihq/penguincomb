@@ -1,0 +1,38 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <RootNamespace>PenguinComb.Tests</RootNamespace>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
+    <PackageReference Include="xunit" Version="2.9.2" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2" />
+    <PackageReference Include="Avalonia" Version="11.3.19" />
+    <PackageReference Include="Avalonia.Headless" Version="11.3.19" />
+    <PackageReference Include="Avalonia.Themes.Fluent" Version="11.3.19" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="xunit.runner.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\PenguinComb.Application\PenguinComb.Application.csproj" />
+    <ProjectReference Include="..\..\src\PenguinComb.Infrastructure\PenguinComb.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\PenguinComb.App\PenguinComb.App.csproj" />
+  </ItemGroup>
+
+  <!-- Same bundled resources as the app, so casing/resource tests run against the real files. -->
+  <ItemGroup>
+    <None Include="..\..\src\PenguinComb.App\List Files\Skeletons.txt" Link="List Files\Skeletons.txt" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\src\PenguinComb.App\List Files\SongCategories.txt" Link="List Files\SongCategories.txt" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="..\..\src\PenguinComb.App\Replacements\**" Link="Replacements\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+</Project>

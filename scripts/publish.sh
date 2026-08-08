@@ -1,5 +1,5 @@
 #!/usr/bin/env sh
-# Publishes Honeycomb for a target runtime and produces a ready-to-distribute
+# Publishes PenguinComb for a target runtime and produces a ready-to-distribute
 # package. Requires: dotnet SDK 8+, tar, (for linux) tar + gzip.
 #
 # Usage:
@@ -19,31 +19,31 @@ OUT="$ROOT/artifacts"
 # restricted environments (containers, sandboxes). Harmless on regular machines.
 export MSBUILDDISABLENODEREUSE=1
 
-echo "Publishing Honeycomb for $RID ..."
+echo "Publishing PenguinComb for $RID ..."
 SC=""
 if [ "$SELF_CONTAINED" = "self" ]; then
     SC="--self-contained true"
 fi
 
-dotnet publish "$ROOT/src/Honeycomb.App/Honeycomb.App.csproj" \
+dotnet publish "$ROOT/src/PenguinComb.App/PenguinComb.App.csproj" \
     -c Release -r "$RID" $SC -m:1 -o "$OUT/publish-$RID"
 
 if [ "$RID" = "win-x64" ]; then
     echo "Creating Windows zip..."
-    (cd "$OUT" && tar -czf "honeycomb-$RID.tar.gz" "publish-$RID")
-    echo "Windows package: $OUT/honeycomb-$RID.tar.gz"
+    (cd "$OUT" && tar -czf "penguincomb-$RID.tar.gz" "publish-$RID")
+    echo "Windows package: $OUT/penguincomb-$RID.tar.gz"
     exit 0
 fi
 
 # ---- Linux packaging: .tar.gz + desktop entry + icon ----
-PKG_DIR="$OUT/honeycomb-linux-$RID"
+PKG_DIR="$OUT/penguincomb-linux-$RID"
 rm -rf "$PKG_DIR"
 mkdir -p "$PKG_DIR"
 cp -r "$OUT/publish-$RID"/. "$PKG_DIR/"
-install -D -m 0644 "$ROOT/packaging/linux/honeycomb.desktop" "$PKG_DIR/honeycomb.desktop"
-install -D -m 0644 "$ROOT/packaging/linux/honeycomb.svg" "$PKG_DIR/honeycomb.svg"
+install -D -m 0644 "$ROOT/packaging/linux/penguincomb.desktop" "$PKG_DIR/penguincomb.desktop"
+install -D -m 0644 "$ROOT/packaging/linux/penguincomb.svg" "$PKG_DIR/penguincomb.svg"
 
-(cd "$OUT" && tar -czf "honeycomb-$RID.tar.gz" "honeycomb-linux-$RID")
-echo "Linux package: $OUT/honeycomb-$RID.tar.gz"
+(cd "$OUT" && tar -czf "penguincomb-$RID.tar.gz" "penguincomb-linux-$RID")
+echo "Linux package: $OUT/penguincomb-$RID.tar.gz"
 echo "Contents:"
-tar -tzf "$OUT/honeycomb-$RID.tar.gz" | head -8
+tar -tzf "$OUT/penguincomb-$RID.tar.gz" | head -8

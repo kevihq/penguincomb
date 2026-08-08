@@ -1,4 +1,4 @@
-# Porting notes: Honeycomb WinForms -> Avalonia
+# Porting notes: PenguinComb WinForms -> Avalonia
 
 This document describes how the original Windows-only WinForms application
 (`Honeycomb-GUI`) was ported to the cross-platform Avalonia application in this
@@ -8,11 +8,11 @@ repository, what changed, and how the two relate.
 
 ```
 ┌────────────────────────────────────────────────────────────┐
-│ Honeycomb.App (Avalonia UI, net8.0)                        │
+│ PenguinComb.App (Avalonia UI, net8.0)                        │
 │   Views (AXAML)  ·  ViewModels (CommunityToolkit.Mvvm)     │
 │   App / Program (DI composition) · dialogs · console sink  │
 ├────────────────────────────────────────────────────────────┤
-│ Honeycomb.Application (net8.0, no UI, no platform APIs)    │
+│ PenguinComb.Application (net8.0, no UI, no platform APIs)    │
 │   Abstractions (IPlatformService, ISettingsService,        │
 │   IFileDialogService, IExternalProcessService,             │
 │   IGameInstallLocator, IExternalToolLocator, ...)          │
@@ -21,7 +21,7 @@ repository, what changed, and how the two relate.
 │   PreCompileChecks, ProjectFileService, GameInstallValidator│
 │   Models: SongProjectData (ghproj), AppSettings, ...       │
 ├────────────────────────────────────────────────────────────┤
-│ Honeycomb.Infrastructure (net8.0)                          │
+│ PenguinComb.Infrastructure (net8.0)                          │
 │   JsonSettingsService · ExternalProcessService             │
 │   AppDataLocator (XDG / %APPDATA%)                         │
 │   WindowsGameInstallLocator (registry, guarded)            │
@@ -37,7 +37,7 @@ repository, what changed, and how the two relate.
   it only calls the services above.
 * The heavy lifting (PAK/QB/WAD/SGH/MIDI/SKA/audio) is done by the referenced
   GH-Toolkit library, exactly like the old GUI and the CLI.
-* `Honeycomb.Tests` contains unit + integration tests plus Avalonia headless
+* `PenguinComb.Tests` contains unit + integration tests plus Avalonia headless
   smoke tests.
 
 ## 2. Windows-specific dependencies (old GUI)
@@ -108,7 +108,7 @@ Behavior notes:
 8. **Read-only app mounts (AppImage)**: the toolkit no longer writes beside the
    executable. User checksum keys (`keys_user.txt`/`keys_qs_user.txt`) go to the
    app folder when writable, otherwise to the per-user data folder
-   (`$XDG_DATA_HOME/Honeycomb/QBDebug` on Linux, `%LOCALAPPDATA%\Honeycomb\QBDebug`
+   (`$XDG_DATA_HOME/PenguinComb/QBDebug` on Linux, `%LOCALAPPDATA%\PenguinComb\QBDebug`
    on Windows); writer failures degrade gracefully instead of failing compilation.
    Temporary QS extraction in PAK compilation uses the system temp directory.
    Bundled `QBDebug/keys*.txt` and `PS2Pak.dbg` remain read-only resources read

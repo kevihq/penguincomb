@@ -1,0 +1,42 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:PenguinComb.App.ViewModels"
+        x:Class="PenguinComb.App.Views.WadToolsWindow"
+        x:DataType="vm:WadToolsViewModel"
+        Title="WAD Tools"
+        Width="620"
+        Height="360"
+        MinWidth="540"
+        MinHeight="320"
+        Icon="/Assets/penguincomb.ico"
+        WindowStartupLocation="CenterOwner">
+
+    <TabControl Margin="8">
+
+        <TabItem Header="Extract">
+            <StackPanel Spacing="8" Margin="10">
+                <TextBlock Text="WAD File" />
+                <Grid ColumnDefinitions="*,70">
+                    <TextBox x:Name="WadFileBox" Text="{Binding WadFile}" />
+                    <Button Grid.Column="1" Content="Open" Command="{Binding OpenWadCommand}" Margin="6,0,0,0" />
+                </Grid>
+                <TextBlock Text="Requires DATAP.HED, DATAP.WAD, DATAPD.HDP and DATAPF.HDP in the same folder." FontSize="12" Foreground="#888" TextWrapping="Wrap" />
+                <Button Content="Extract" Command="{Binding ExtractCommand}" IsEnabled="{Binding IsExtracting, Converter={x:Static BoolConverters.Not}}" HorizontalAlignment="Left" MinWidth="120" />
+            </StackPanel>
+        </TabItem>
+
+        <TabItem Header="Compile">
+            <StackPanel Spacing="8" Margin="10">
+                <TextBlock Text="Extracted WAD Folder" />
+                <Grid ColumnDefinitions="*,70">
+                    <TextBox x:Name="WadFolderBox" Text="{Binding WadFolderToCompile}" />
+                    <Button Grid.Column="1" Content="Select" Command="{Binding SelectFolderCommand}" Margin="6,0,0,0" />
+                </Grid>
+                <CheckBox Content="Recompile qb pak file" IsChecked="{Binding RecompileQb}" />
+                <Button Content="Compile" Command="{Binding CompileCommand}" IsEnabled="{Binding IsCompiling, Converter={x:Static BoolConverters.Not}}" HorizontalAlignment="Left" MinWidth="120" />
+            </StackPanel>
+        </TabItem>
+
+    </TabControl>
+
+</Window>

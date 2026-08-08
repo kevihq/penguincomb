@@ -1,0 +1,599 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:PenguinComb.App.ViewModels"
+        xmlns:conv="using:PenguinComb.App.Converters"
+        x:Class="PenguinComb.App.Views.CompileSongWindow"
+        x:DataType="vm:CompileSongViewModel"
+        Title="PenguinComb - Song Compiler"
+        Width="980"
+        Height="740"
+        MinWidth="820"
+        MinHeight="600"
+        Icon="/Assets/penguincomb.ico"
+        WindowStartupLocation="CenterOwner">
+
+    <Window.Resources>
+        <conv:EqualityToBoolConverter x:Key="EqToBool" />
+    </Window.Resources>
+
+    <DockPanel>
+
+        <Menu DockPanel.Dock="Top">
+            <MenuItem Header="File">
+                <MenuItem Header="New" Command="{Binding NewProjectCommand}" />
+                <MenuItem Header="Open..." Command="{Binding OpenCommand}" />
+                <MenuItem Header="Save" Command="{Binding SaveCommand}" />
+                <MenuItem Header="Save As..." Command="{Binding SaveAsCommand}" />
+                <Separator />
+                <MenuItem Header="Save Template" Command="{Binding SaveTemplateCommand}" />
+                <MenuItem Header="Load Template" Command="{Binding LoadTemplateCommand}" />
+                <Separator />
+                <MenuItem Header="Export Song Archive" Command="{Binding ExportSongArchiveCommand}" />
+                <MenuItem Header="Compile Audio" Command="{Binding CompileAudioCommand}" />
+                <Separator />
+                <MenuItem Header="Settings" Command="{Binding OpenSettingsCommand}" />
+            </MenuItem>
+        </Menu>
+
+        <Border DockPanel.Dock="Bottom" BorderBrush="#666" BorderThickness="0,1,0,0" Padding="6,3">
+            <TextBlock Text="{Binding StatusText}" FontSize="12" />
+        </Border>
+
+        <Grid Margin="8">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="270" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <!-- ===================== Left: game/platform ===================== -->
+            <ScrollViewer Grid.Column="0" VerticalScrollBarVisibility="Auto">
+                <StackPanel Spacing="6" Margin="0,0,8,0">
+
+                <Border BorderBrush="#888" BorderThickness="1" CornerRadius="4" Padding="8">
+                    <StackPanel Spacing="6">
+                        <TextBlock Text="Game" FontWeight="SemiBold" />
+                        <WrapPanel>
+                                <RadioButton Content="GH3" GroupName="game"
+                                             IsChecked="{Binding SelectedGame, Converter={StaticResource EqToBool}, ConverterParameter=GH3}" Width="80" />
+                                <RadioButton Content="GHA" GroupName="game"
+                                             IsChecked="{Binding SelectedGame, Converter={StaticResource EqToBool}, ConverterParameter=GHA}" Width="80" />
+                                <RadioButton Content="GHWT" GroupName="game"
+                                             IsChecked="{Binding SelectedGame, Converter={StaticResource EqToBool}, ConverterParameter=GHWT}" />
+                            </WrapPanel>
+                            <WrapPanel>
+                                <RadioButton Content="GH5" GroupName="game"
+                                             IsChecked="{Binding SelectedGame, Converter={StaticResource EqToBool}, ConverterParameter=GH5}" Width="80" />
+                                <RadioButton Content="GHWoR" GroupName="game"
+                                             IsChecked="{Binding SelectedGame, Converter={StaticResource EqToBool}, ConverterParameter=GHWoR}" />
+                            </WrapPanel>
+                        </StackPanel>
+                    </Border>
+
+                <Border BorderBrush="#888" BorderThickness="1" CornerRadius="4" Padding="8">
+                    <StackPanel Spacing="6">
+                        <TextBlock Text="Platform" FontWeight="SemiBold" />
+                        <RadioButton Content="PC" GroupName="platform" IsEnabled="{Binding PlatformPcEnabled}"
+                                         IsChecked="{Binding SelectedPlatform, Converter={StaticResource EqToBool}, ConverterParameter=PC}" />
+                            <RadioButton Content="Xbox 360" GroupName="platform" IsEnabled="{Binding Platform360Enabled}"
+                                         IsChecked="{Binding SelectedPlatform, Converter={StaticResource EqToBool}, ConverterParameter=Xbox 360}" />
+                            <RadioButton Content="PS2" GroupName="platform" IsEnabled="{Binding PlatformPs2Enabled}"
+                                         IsChecked="{Binding SelectedPlatform, Converter={StaticResource EqToBool}, ConverterParameter=PS2}" />
+                            <RadioButton Content="PS3" GroupName="platform" IsEnabled="{Binding PlatformPs3Enabled}"
+                                         IsChecked="{Binding SelectedPlatform, Converter={StaticResource EqToBool}, ConverterParameter=PS3}" />
+                        </StackPanel>
+                    </Border>
+
+                    <StackPanel Orientation="Horizontal" Spacing="6" IsVisible="{Binding IsDlcChecksumVisible}">
+                        <TextBlock Text="DLC Checksum:" VerticalAlignment="Center" />
+                        <TextBlock Text="{Binding DlcChecksumText}" FontWeight="Bold" VerticalAlignment="Center" />
+                    </StackPanel>
+
+                    <Button Content="Import Data from Clone Hero folder" Command="{Binding ImportChFolderCommand}" HorizontalAlignment="Stretch" />
+                </StackPanel>
+            </ScrollViewer>
+
+            <!-- ===================== Right: tabs ===================== -->
+            <TabControl Grid.Column="1" SelectedIndex="{Binding SelectedTabIndex}">
+
+                <!-- ============ Metadata ============ -->
+                <TabItem Header="Metadata" IsVisible="{Binding IsModernTabsVisible, Mode=OneWay}">
+                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                        <StackPanel Spacing="6" Margin="10">
+                            <Grid ColumnDefinitions="120,*,240" RowDefinitions="Auto">
+                                <TextBlock Text="Title:" VerticalAlignment="Center" />
+                                <TextBox Grid.Column="1" Text="{Binding Data.title}" />
+                                <TextBlock Grid.Column="2" Text="Checksum:" Margin="12,0,0,0" VerticalAlignment="Center" />
+                                <TextBox Grid.Column="2" Text="{Binding Data.songName}" Margin="12,0,0,0" />
+                            </Grid>
+                            <Grid ColumnDefinitions="120,*">
+                                <TextBlock Text="Artist:" VerticalAlignment="Center" />
+                                <TextBox Grid.Column="1" Text="{Binding Data.artist}" />
+                            </Grid>
+                            <Grid ColumnDefinitions="120,*">
+                                <TextBlock Text="Album:" VerticalAlignment="Center" />
+                                <TextBox Grid.Column="1" Text="{Binding Data.album}" />
+                            </Grid>
+                            <Grid ColumnDefinitions="120,*">
+                                <TextBlock Text="Year:" VerticalAlignment="Center" />
+                                <NumericUpDown Grid.Column="1" Value="{Binding Data.songYear}" Minimum="1900" Maximum="9999" HorizontalAlignment="Left" Width="120" />
+                            </Grid>
+                            <Grid ColumnDefinitions="120,*">
+                                <TextBlock Text="Cover:" VerticalAlignment="Center" />
+                                <CheckBox Grid.Column="1" Content="Cover" IsChecked="{Binding IsCover}" />
+                            </Grid>
+                            <Grid ColumnDefinitions="120,*" IsVisible="{Binding IsCoverFieldsEnabled}">
+                                <TextBlock Text="Cover Artist:" VerticalAlignment="Center" />
+                                <TextBox Grid.Column="1" Text="{Binding Data.coverArtist}" />
+                            </Grid>
+                            <Grid ColumnDefinitions="120,*" IsVisible="{Binding IsCoverFieldsEnabled}">
+                                <TextBlock Text="Cover Year:" VerticalAlignment="Center" />
+                                <NumericUpDown Grid.Column="1" Value="{Binding Data.coverYear}" Minimum="1900" Maximum="9999" HorizontalAlignment="Left" Width="120" />
+                            </Grid>
+                            <Grid ColumnDefinitions="120,*">
+                                <TextBlock Text="Genre:" VerticalAlignment="Center" />
+                                <ComboBox Grid.Column="1" ItemsSource="{Binding GenreOptions}" SelectedIndex="{Binding SelectedGenreIndex}" />
+                            </Grid>
+                            <Grid ColumnDefinitions="120,*">
+                                <TextBlock Text="Chart Author:" VerticalAlignment="Center" />
+                                <TextBox Grid.Column="1" Text="{Binding Data.chartAuthor}" />
+                            </Grid>
+                            <Grid ColumnDefinitions="120,*">
+                                <TextBlock Text="Artist Text:" VerticalAlignment="Center" />
+                                <ComboBox Grid.Column="1" ItemsSource="{Binding ArtistTextOptions}" SelectedIndex="{Binding SelectedArtistTextIndex}" />
+                            </Grid>
+                            <Grid ColumnDefinitions="120,*" IsVisible="{Binding IsArtistTextCustomEnabled}">
+                                <TextBlock Text="Artist Text (Other):" VerticalAlignment="Center" />
+                                <TextBox Grid.Column="1" Text="{Binding Data.artistTextCustom}" />
+                            </Grid>
+                        </StackPanel>
+                    </ScrollViewer>
+                </TabItem>
+
+                <!-- ============ Audio (GH3) ============ -->
+                <TabItem Header="Audio (GH3)" IsVisible="{Binding IsGh3TabsVisible, Mode=OneWay}">
+                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                        <StackPanel Spacing="6" Margin="10">
+                            <CheckBox Content="P2 is Rhythm" IsChecked="{Binding IsP2Rhythm}" />
+                            <CheckBox Content="Separate Co-op Audio" IsChecked="{Binding IsCoopAudio}" IsEnabled="{Binding IsCoopAudioEnabled}" />
+
+                            <TextBlock Text="Track" FontWeight="SemiBold" />
+                            <Grid ColumnDefinitions="120,*,40">
+                                <TextBlock Text="Guitar" VerticalAlignment="Center" />
+                                <TextBox Grid.Column="1" Text="{Binding Data.guitarPathGh3}" />
+                                <Button Grid.Column="2" Content="..." Command="{Binding BrowseCommand}" CommandParameter="guitarPathGh3" Margin="4,0,0,0" />
+                            </Grid>
+                            <Grid ColumnDefinitions="120,*,40">
+                                <TextBlock x:Name="RhythmLabel" Text="{Binding RhythmLabelText}" VerticalAlignment="Center" />
+                                <TextBox Grid.Column="1" Text="{Binding Data.rhythmPathGh3}" />
+                                <Button Grid.Column="2" Content="..." Command="{Binding BrowseCommand}" CommandParameter="rhythmPathGh3" Margin="4,0,0,0" />
+                            </Grid>
+                            <Grid ColumnDefinitions="120,*,40">
+                                <TextBlock Text="Backing" VerticalAlignment="Center" />
+                                <ListBox Grid.Column="1" Height="70" ItemsSource="{Binding BackingGh3}" SelectedIndex="{Binding BackingGh3Selection}" />
+                                <StackPanel Grid.Column="2" Margin="4,0,0,0">
+                                    <Button Content="Add" Command="{Binding AddBackingCommand}" CommandParameter="gh3" Margin="0,0,0,4" />
+                                    <Button Content="Delete" Command="{Binding RemoveBackingCommand}" CommandParameter="gh3" />
+                                </StackPanel>
+                            </Grid>
+
+                            <StackPanel IsVisible="{Binding IsCoopFieldsEnabled}">
+                                <TextBlock Text="Co-op" FontWeight="SemiBold" />
+                                <Grid ColumnDefinitions="120,*,40">
+                                    <TextBlock Text="Guitar" VerticalAlignment="Center" />
+                                    <TextBox Grid.Column="1" Text="{Binding Data.coopGuitarPath}" />
+                                    <Button Grid.Column="2" Content="..." Command="{Binding BrowseCommand}" CommandParameter="coopGuitarPath" Margin="4,0,0,0" />
+                                </Grid>
+                                <Grid ColumnDefinitions="120,*,40">
+                                    <TextBlock Text="Rhythm" VerticalAlignment="Center" />
+                                    <TextBox Grid.Column="1" Text="{Binding Data.coopRhythmPath}" />
+                                    <Button Grid.Column="2" Content="..." Command="{Binding BrowseCommand}" CommandParameter="coopRhythmPath" Margin="4,0,0,0" />
+                                </Grid>
+                                <Grid ColumnDefinitions="120,*,40">
+                                    <TextBlock Text="Backing" VerticalAlignment="Center" />
+                                    <ListBox Grid.Column="1" Height="60" ItemsSource="{Binding CoopBackingGh3}" SelectedIndex="{Binding CoopBackingGh3Selection}" />
+                                    <StackPanel Grid.Column="2" Margin="4,0,0,0">
+                                        <Button Content="Add" Command="{Binding AddBackingCommand}" CommandParameter="coop" Margin="0,0,0,4" />
+                                        <Button Content="Delete" Command="{Binding RemoveBackingCommand}" CommandParameter="coop" />
+                                    </StackPanel>
+                                </Grid>
+                            </StackPanel>
+
+                            <Grid ColumnDefinitions="120,*,40">
+                                <TextBlock Text="Crowd" VerticalAlignment="Center" IsEnabled="{Binding IsGh3CrowdEnabled}" />
+                                <TextBox Grid.Column="1" Text="{Binding Data.crowdPathGh3}" IsEnabled="{Binding IsGh3CrowdEnabled}" />
+                                <Button Grid.Column="2" Content="..." Command="{Binding BrowseCommand}" CommandParameter="crowdPathGh3" IsEnabled="{Binding IsGh3CrowdEnabled}" Margin="4,0,0,0" />
+                            </Grid>
+
+                            <CheckBox Content="Use Rendered Preview" IsChecked="{Binding UseRenderedPreviewGh3}" />
+                            <Grid ColumnDefinitions="120,*,40" IsEnabled="{Binding IsGh3PreviewFieldsEnabled}">
+                                <TextBlock Text="Preview" VerticalAlignment="Center" />
+                                <TextBox Grid.Column="1" Text="{Binding Data.previewAudioPathGh3}" />
+                                <Button Grid.Column="2" Content="..." Command="{Binding BrowseCommand}" CommandParameter="previewAudioPathGh3" Margin="4,0,0,0" />
+                            </Grid>
+                            <StackPanel Orientation="Horizontal" Spacing="8" IsEnabled="{Binding IsGh3PreviewFieldsEnabled}">
+                                <TextBlock Text="Preview Start:" VerticalAlignment="Center" FontSize="14" />
+                                <NumericUpDown Value="{Binding PreviewMinutesGh3}" Minimum="0" Maximum="59" Width="120" Height="38" FontSize="16" FormatString="0" ToolTip.Tip="Minutes" />
+                                <NumericUpDown Value="{Binding PreviewSecondsGh3}" Minimum="0" Maximum="59" Width="120" Height="38" FontSize="16" FormatString="0" ToolTip.Tip="Seconds" />
+                                <NumericUpDown Value="{Binding PreviewMillsGh3}" Minimum="0" Maximum="999" Width="140" Height="38" FontSize="16" FormatString="0" ToolTip.Tip="Milliseconds" />
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal" Spacing="8" IsEnabled="{Binding IsGh3PreviewFieldsEnabled}">
+                                <TextBlock Text="Length:" VerticalAlignment="Center" FontSize="14" />
+                                <NumericUpDown Value="{Binding LengthMinutesGh3}" Minimum="0" Maximum="59" Width="120" Height="38" FontSize="16" FormatString="0" ToolTip.Tip="Minutes" />
+                                <NumericUpDown Value="{Binding LengthSecondsGh3}" Minimum="0" Maximum="59" Width="120" Height="38" FontSize="16" FormatString="0" ToolTip.Tip="Seconds" />
+                                <NumericUpDown Value="{Binding LengthMillsGh3}" Minimum="0" Maximum="999" Width="140" Height="38" FontSize="16" FormatString="0" ToolTip.Tip="Milliseconds" />
+                                <CheckBox Content="Set End Time" IsChecked="{Binding SetEnd}" VerticalAlignment="Center" FontSize="14" />
+                            </StackPanel>
+                            <Grid ColumnDefinitions="120,*">
+                                <TextBlock Text="Vol (dB):" VerticalAlignment="Center" />
+                                <NumericUpDown Grid.Column="1" Value="{Binding Data.previewVolumeGh3}" Minimum="-999" Maximum="10" HorizontalAlignment="Left" Width="120" />
+                            </Grid>
+                        </StackPanel>
+                    </ScrollViewer>
+                </TabItem>
+
+                <!-- ============ Song Data (GH3) ============ -->
+                <TabItem Header="Song Data (GH3)" IsVisible="{Binding IsGh3TabsVisible, Mode=OneWay}">
+                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                        <StackPanel Spacing="6" Margin="10">
+                            <Grid ColumnDefinitions="130,*,40">
+                                <TextBlock Text="MIDI/Chart File:" VerticalAlignment="Center" />
+                                <TextBox Grid.Column="1" Text="{Binding Data.midiPathGh3}" />
+                                <Button Grid.Column="2" Content="..." Command="{Binding BrowseCommand}" CommandParameter="midiPathGh3" Margin="4,0,0,0" />
+                            </Grid>
+                            <Grid ColumnDefinitions="130,*,40">
+                                <TextBlock Text="Perf Override:" VerticalAlignment="Center" />
+                                <TextBox Grid.Column="1" Text="{Binding Data.perfPathGh3}" />
+                                <Button Grid.Column="2" Content="..." Command="{Binding BrowseCommand}" CommandParameter="perfPathGh3" Margin="4,0,0,0" />
+                            </Grid>
+                            <Grid ColumnDefinitions="130,*,40">
+                                <TextBlock Text="SKA Files:" VerticalAlignment="Center" />
+                                <TextBox Grid.Column="1" Text="{Binding Data.skaPathGh3}" />
+                                <Button Grid.Column="2" Content="..." Command="{Binding BrowseCommand}" CommandParameter="skaPathGh3" Margin="4,0,0,0" />
+                            </Grid>
+                            <Grid ColumnDefinitions="130,*">
+                                <TextBlock Text="SKA Source:" VerticalAlignment="Center" />
+                                <ComboBox Grid.Column="1" ItemsSource="{Binding SkaSourceOptions}" SelectedIndex="{Binding Data.skaSourceGh3}" />
+                            </Grid>
+                            <Grid ColumnDefinitions="130,*,40">
+                                <TextBlock Text="Song Scripts:" VerticalAlignment="Center" />
+                                <TextBox Grid.Column="1" Text="{Binding Data.songScriptPathGh3}" />
+                                <Button Grid.Column="2" Content="..." Command="{Binding BrowseCommand}" CommandParameter="songScriptPathGh3" Margin="4,0,0,0" />
+                            </Grid>
+                            <Grid ColumnDefinitions="130,*">
+                                <TextBlock Text="Count Off:" VerticalAlignment="Center" />
+                                <ComboBox Grid.Column="1" ItemsSource="{Binding CountoffOptions}" SelectedIndex="{Binding Data.countoffGh3}" />
+                            </Grid>
+                            <Grid ColumnDefinitions="130,*">
+                                <TextBlock Text="Vocalist:" VerticalAlignment="Center" />
+                                <ComboBox Grid.Column="1" ItemsSource="{Binding VocalGenderOptions}" SelectedIndex="{Binding SelectedVocalGenderGh3Index}" />
+                            </Grid>
+                            <Grid ColumnDefinitions="130,*" IsVisible="{Binding IsAerosmithBandEnabled}">
+                                <TextBlock Text="Aerosmith:" VerticalAlignment="Center" />
+                                <ComboBox Grid.Column="1" ItemsSource="{Binding AerosmithBandOptions}" SelectedItem="{Binding State.AerosmithBand}" />
+                            </Grid>
+                            <Grid ColumnDefinitions="130,*">
+                                <TextBlock Text="Bassist:" VerticalAlignment="Center" />
+                                <ComboBox Grid.Column="1" ItemsSource="{Binding BassistOptions}" SelectedIndex="{Binding Data.bassistSelect}" />
+                            </Grid>
+                            <Grid ColumnDefinitions="130,*">
+                                <TextBlock Text="Venue Source:" VerticalAlignment="Center" />
+                                <ComboBox Grid.Column="1" ItemsSource="{Binding VenueOptions}" SelectedIndex="{Binding Data.venueSourceGh3}" />
+                            </Grid>
+                            <Grid ColumnDefinitions="130,*">
+                                <TextBlock Text="Guitar Volume:" VerticalAlignment="Center" />
+                                <NumericUpDown Grid.Column="1" Value="{Binding Data.gtrVolumeGh3}" Minimum="-10" Maximum="10" HorizontalAlignment="Left" Width="120" />
+                            </Grid>
+                            <Grid ColumnDefinitions="130,*">
+                                <TextBlock Text="Band Volume:" VerticalAlignment="Center" />
+                                <NumericUpDown Grid.Column="1" Value="{Binding Data.bandVolumeGh3}" Minimum="-10" Maximum="10" HorizontalAlignment="Left" Width="120" />
+                            </Grid>
+                        </StackPanel>
+                    </ScrollViewer>
+                </TabItem>
+
+                <!-- ============ Audio (WT) ============ -->
+                <TabItem Header="Audio (WT)" IsVisible="{Binding IsModernTabsVisible, Mode=OneWay}">
+                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                        <StackPanel Spacing="6" Margin="10">
+                            <TextBlock Text="Track" FontWeight="SemiBold" />
+                            <Grid ColumnDefinitions="120,*,40">
+                                <TextBlock Text="Kick" VerticalAlignment="Center" />
+                                <TextBox Grid.Column="1" Text="{Binding Data.kickPath}" />
+                                <Button Grid.Column="2" Content="..." Command="{Binding BrowseCommand}" CommandParameter="kickPath" Margin="4,0,0,0" />
+                            </Grid>
+                            <Grid ColumnDefinitions="120,*,40">
+                                <TextBlock Text="Snare" VerticalAlignment="Center" />
+                                <TextBox Grid.Column="1" Text="{Binding Data.snarePath}" />
+                                <Button Grid.Column="2" Content="..." Command="{Binding BrowseCommand}" CommandParameter="snarePath" Margin="4,0,0,0" />
+                            </Grid>
+                            <Grid ColumnDefinitions="120,*,40">
+                                <TextBlock Text="Cymbals" VerticalAlignment="Center" />
+                                <TextBox Grid.Column="1" Text="{Binding Data.cymbalsPath}" />
+                                <Button Grid.Column="2" Content="..." Command="{Binding BrowseCommand}" CommandParameter="cymbalsPath" Margin="4,0,0,0" />
+                            </Grid>
+                            <Grid ColumnDefinitions="120,*,40">
+                                <TextBlock Text="Toms" VerticalAlignment="Center" />
+                                <TextBox Grid.Column="1" Text="{Binding Data.tomsPath}" />
+                                <Button Grid.Column="2" Content="..." Command="{Binding BrowseCommand}" CommandParameter="tomsPath" Margin="4,0,0,0" />
+                            </Grid>
+                            <Grid ColumnDefinitions="120,*,40">
+                                <TextBlock Text="Guitar" VerticalAlignment="Center" />
+                                <TextBox Grid.Column="1" Text="{Binding Data.guitarPath}" />
+                                <Button Grid.Column="2" Content="..." Command="{Binding BrowseCommand}" CommandParameter="guitarPath" Margin="4,0,0,0" />
+                            </Grid>
+                            <Grid ColumnDefinitions="120,*,40">
+                                <TextBlock Text="Bass" VerticalAlignment="Center" />
+                                <TextBox Grid.Column="1" Text="{Binding Data.bassPath}" />
+                                <Button Grid.Column="2" Content="..." Command="{Binding BrowseCommand}" CommandParameter="bassPath" Margin="4,0,0,0" />
+                            </Grid>
+                            <Grid ColumnDefinitions="120,*,40">
+                                <TextBlock Text="Vocals" VerticalAlignment="Center" />
+                                <TextBox Grid.Column="1" Text="{Binding Data.vocalsPath}" />
+                                <Button Grid.Column="2" Content="..." Command="{Binding BrowseCommand}" CommandParameter="vocalsPath" Margin="4,0,0,0" />
+                            </Grid>
+                            <Grid ColumnDefinitions="120,*,40">
+                                <TextBlock Text="Backing" VerticalAlignment="Center" />
+                                <ListBox Grid.Column="1" Height="70" ItemsSource="{Binding BackingWt}" SelectedIndex="{Binding BackingWtSelection}" />
+                                <StackPanel Grid.Column="2" Margin="4,0,0,0">
+                                    <Button Content="Add" Command="{Binding AddBackingCommand}" CommandParameter="wt" Margin="0,0,0,4" />
+                                    <Button Content="Delete" Command="{Binding RemoveBackingCommand}" CommandParameter="wt" />
+                                </StackPanel>
+                            </Grid>
+                            <Grid ColumnDefinitions="120,*,40">
+                                <TextBlock Text="Crowd" VerticalAlignment="Center" />
+                                <TextBox Grid.Column="1" Text="{Binding Data.crowdPath}" />
+                                <Button Grid.Column="2" Content="..." Command="{Binding BrowseCommand}" CommandParameter="crowdPath" Margin="4,0,0,0" />
+                            </Grid>
+
+                            <CheckBox Content="Use Rendered Preview" IsChecked="{Binding UseRenderedPreview}" />
+                            <Grid ColumnDefinitions="120,*,40" IsEnabled="{Binding IsPreviewFieldsEnabled}">
+                                <TextBlock Text="Preview" VerticalAlignment="Center" />
+                                <TextBox Grid.Column="1" Text="{Binding Data.previewAudioPath}" />
+                                <Button Grid.Column="2" Content="..." Command="{Binding BrowseCommand}" CommandParameter="previewAudioPath" Margin="4,0,0,0" />
+                            </Grid>
+                            <StackPanel Orientation="Horizontal" Spacing="8" IsEnabled="{Binding IsPreviewFieldsEnabled}">
+                                <TextBlock Text="Preview Start:" VerticalAlignment="Center" FontSize="14" />
+                                <NumericUpDown Value="{Binding PreviewMinutes}" Minimum="0" Maximum="59" Width="120" Height="38" FontSize="16" FormatString="0" ToolTip.Tip="Minutes" />
+                                <NumericUpDown Value="{Binding PreviewSeconds}" Minimum="0" Maximum="59" Width="120" Height="38" FontSize="16" FormatString="0" ToolTip.Tip="Seconds" />
+                                <NumericUpDown Value="{Binding PreviewMills}" Minimum="0" Maximum="999" Width="140" Height="38" FontSize="16" FormatString="0" ToolTip.Tip="Milliseconds" />
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal" Spacing="8" IsEnabled="{Binding IsPreviewFieldsEnabled}">
+                                <TextBlock Text="Length:" VerticalAlignment="Center" FontSize="14" />
+                                <NumericUpDown Value="{Binding LengthMinutes}" Minimum="0" Maximum="59" Width="120" Height="38" FontSize="16" FormatString="0" ToolTip.Tip="Minutes" />
+                                <NumericUpDown Value="{Binding LengthSeconds}" Minimum="0" Maximum="59" Width="120" Height="38" FontSize="16" FormatString="0" ToolTip.Tip="Seconds" />
+                                <NumericUpDown Value="{Binding LengthMills}" Minimum="0" Maximum="999" Width="140" Height="38" FontSize="16" FormatString="0" ToolTip.Tip="Milliseconds" />
+                                <CheckBox Content="Set End Time" IsChecked="{Binding SetEnd}" VerticalAlignment="Center" FontSize="14" />
+                            </StackPanel>
+                            <Grid ColumnDefinitions="120,*">
+                                <TextBlock Text="Vol (dB):" VerticalAlignment="Center" />
+                                <NumericUpDown Grid.Column="1" Value="{Binding Data.previewVolume}" Minimum="-999" Maximum="10" HorizontalAlignment="Left" Width="120" />
+                            </Grid>
+                        </StackPanel>
+                    </ScrollViewer>
+                </TabItem>
+
+                <!-- ============ Song Data (WT) ============ -->
+                <TabItem Header="Song Data (WT)" IsVisible="{Binding IsModernTabsVisible, Mode=OneWay}">
+                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                        <StackPanel Spacing="6" Margin="10">
+                            <Grid ColumnDefinitions="130,*,40">
+                                <TextBlock Text="MIDI/Chart File:" VerticalAlignment="Center" />
+                                <TextBox Grid.Column="1" Text="{Binding Data.midiPath}" />
+                                <Button Grid.Column="2" Content="..." Command="{Binding BrowseCommand}" CommandParameter="midiPath" Margin="4,0,0,0" />
+                            </Grid>
+                            <CheckBox Content="Easy Open Notes" IsChecked="{Binding Data.easyOpen}" />
+                            <Grid ColumnDefinitions="130,*,40">
+                                <TextBlock Text="Perf Override:" VerticalAlignment="Center" />
+                                <TextBox Grid.Column="1" Text="{Binding Data.perfPath}" />
+                                <Button Grid.Column="2" Content="..." Command="{Binding BrowseCommand}" CommandParameter="perfPath" Margin="4,0,0,0" />
+                            </Grid>
+                            <Grid ColumnDefinitions="130,*,40">
+                                <TextBlock Text="SKA Files:" VerticalAlignment="Center" />
+                                <TextBox Grid.Column="1" Text="{Binding Data.skaPath}" />
+                                <Button Grid.Column="2" Content="..." Command="{Binding BrowseCommand}" CommandParameter="skaPath" Margin="4,0,0,0" />
+                            </Grid>
+                            <Grid ColumnDefinitions="130,*,40">
+                                <TextBlock Text="Lipsync Source:" VerticalAlignment="Center" />
+                                <TextBox Grid.Column="1" Text="{Binding Data.lipsyncPath}" />
+                                <Button Grid.Column="2" Content="..." Command="{Binding BrowseCommand}" CommandParameter="lipsyncPath" Margin="4,0,0,0" />
+                            </Grid>
+                            <Grid ColumnDefinitions="130,*,40">
+                                <TextBlock Text="Song Scripts:" VerticalAlignment="Center" />
+                                <TextBox Grid.Column="1" Text="{Binding Data.songScriptPath}" />
+                                <Button Grid.Column="2" Content="..." Command="{Binding BrowseCommand}" CommandParameter="songScriptPath" Margin="4,0,0,0" />
+                            </Grid>
+                            <Grid ColumnDefinitions="130,*">
+                                <TextBlock Text="Count Off:" VerticalAlignment="Center" />
+                                <ComboBox Grid.Column="1" ItemsSource="{Binding CountoffOptions}" SelectedIndex="{Binding Data.countoff}" />
+                            </Grid>
+                            <Grid ColumnDefinitions="130,*">
+                                <TextBlock Text="Vocal Gender:" VerticalAlignment="Center" />
+                                <ComboBox Grid.Column="1" ItemsSource="{Binding VocalGenderOptions}" SelectedIndex="{Binding Data.vocalGender}" />
+                            </Grid>
+                            <Grid ColumnDefinitions="130,*">
+                                <TextBlock Text="Venue Source:" VerticalAlignment="Center" />
+                                <ComboBox Grid.Column="1" ItemsSource="{Binding VenueOptions}" SelectedIndex="{Binding Data.venueSource}" />
+                            </Grid>
+                            <Grid ColumnDefinitions="130,*">
+                                <TextBlock Text="Vocal Scroll Speed:" VerticalAlignment="Center" />
+                                <NumericUpDown Grid.Column="1" Value="{Binding Data.vocalScrollSpeed}" Minimum="0.5" Maximum="3" Increment="0.05" HorizontalAlignment="Left" Width="120" />
+                            </Grid>
+                            <Grid ColumnDefinitions="130,*">
+                                <TextBlock Text="Vocal Tuning Cents:" VerticalAlignment="Center" />
+                                <NumericUpDown Grid.Column="1" Value="{Binding Data.vocalTuningCents}" Minimum="-50" Maximum="50" HorizontalAlignment="Left" Width="120" />
+                            </Grid>
+                            <Grid ColumnDefinitions="130,*">
+                                <TextBlock Text="Sustain Threshold:" VerticalAlignment="Center" />
+                                <NumericUpDown Grid.Column="1" Value="{Binding Data.sustainThreshold}" Minimum="0" Maximum="1" Increment="0.05" HorizontalAlignment="Left" Width="120" />
+                            </Grid>
+                            <Grid ColumnDefinitions="130,*">
+                                <TextBlock Text="Microphones:" VerticalAlignment="Center" />
+                                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="12">
+                                    <CheckBox Content="Guitar" IsChecked="{Binding Data.guitarMic}" />
+                                    <CheckBox Content="Bass" IsChecked="{Binding Data.bassMic}" />
+                                </StackPanel>
+                            </Grid>
+                            <Grid ColumnDefinitions="130,*">
+                                <TextBlock Text="Drum Kit:" VerticalAlignment="Center" />
+                                <ComboBox Grid.Column="1" ItemsSource="{Binding DrumKitOptions}" SelectedIndex="{Binding SelectedDrumKitIndex}" />
+                            </Grid>
+                            <Grid ColumnDefinitions="130,*">
+                                <TextBlock Text="Overall Volume:" VerticalAlignment="Center" />
+                                <NumericUpDown Grid.Column="1" Value="{Binding Data.overallVolume}" Minimum="-10" Maximum="10" HorizontalAlignment="Left" Width="120" />
+                            </Grid>
+                        </StackPanel>
+                    </ScrollViewer>
+                </TabItem>
+
+                <!-- ============ Compile ============ -->
+                <TabItem Header="Compile">
+                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                        <StackPanel Spacing="8" Margin="10">
+                            <Grid ColumnDefinitions="110,*,40">
+                                <TextBlock Text="Compile Folder:" VerticalAlignment="Center" />
+                                <TextBox Grid.Column="1" Text="{Binding Data.compilePath}" />
+                                <Button Grid.Column="2" Content="..." Command="{Binding BrowseCommand}" CommandParameter="compilePath" Margin="4,0,0,0" />
+                            </Grid>
+                            <Grid ColumnDefinitions="110,*,40">
+                                <TextBlock Text="Project File:" VerticalAlignment="Center" />
+                                <TextBox Grid.Column="1" Text="{Binding Data.projectPath}" />
+                                <Button Grid.Column="2" Content="..." Command="{Binding BrowseCommand}" CommandParameter="projectPath" Margin="4,0,0,0" />
+                            </Grid>
+
+                <Border BorderBrush="#888" BorderThickness="1" CornerRadius="4" Padding="8">
+                    <StackPanel Spacing="6">
+                        <TextBlock Text="Compile Settings" FontWeight="SemiBold" />
+                        <Grid ColumnDefinitions="150,*">
+                                        <TextBlock Text="HOPO Threshold:" VerticalAlignment="Center" />
+                                        <NumericUpDown Grid.Column="1" Value="{Binding Data.hmxHopoVal}" Minimum="10" Maximum="10000" HorizontalAlignment="Left" Width="130" />
+                                    </Grid>
+                                    <Grid ColumnDefinitions="150,*">
+                                        <TextBlock Text="HOPO Mode:" VerticalAlignment="Center" />
+                                        <ComboBox Grid.Column="1" ItemsSource="{Binding HopoModeOptions}" SelectedIndex="{Binding Data.hopoMode}" HorizontalAlignment="Left" Width="220" />
+                                    </Grid>
+                                    <Grid ColumnDefinitions="150,*">
+                                        <TextBlock Text="NS Value (for .q MIDI):" VerticalAlignment="Center" />
+                                        <NumericUpDown Grid.Column="1" Value="{Binding NsHopoValue}" Minimum="1" Maximum="10000" HorizontalAlignment="Left" Width="130" />
+                                    </Grid>
+                                    <CheckBox Content="Use BEAT track as tempo map" IsChecked="{Binding Data.useBeatTrack}" />
+                                    <TextBlock Text="Beat Lines BPM" FontWeight="SemiBold" />
+                                    <Grid ColumnDefinitions="150,150,*,*">
+                                        <TextBlock Text="8th Notes - Low:" VerticalAlignment="Center" />
+                                        <NumericUpDown Grid.Column="1" Value="{Binding Data.beat8thLow}" Minimum="1" Maximum="1000" IsEnabled="{Binding IsBeatLinesEnabled}" />
+                                        <TextBlock Grid.Column="2" Text="8th Notes - High:" VerticalAlignment="Center" Margin="8,0,0,0" />
+                                        <NumericUpDown Grid.Column="3" Value="{Binding Data.beat8thHigh}" Minimum="1" Maximum="1000" IsEnabled="{Binding IsBeatLinesEnabled}" />
+                                    </Grid>
+                                    <Grid ColumnDefinitions="150,150,*,*">
+                                        <TextBlock Text="16th Notes - Low:" VerticalAlignment="Center" />
+                                        <NumericUpDown Grid.Column="1" Value="{Binding Data.beat16thLow}" Minimum="1" Maximum="1000" IsEnabled="{Binding IsBeatLinesEnabled}" />
+                                        <TextBlock Grid.Column="2" Text="16th Notes - High:" VerticalAlignment="Center" Margin="8,0,0,0" />
+                                        <NumericUpDown Grid.Column="3" Value="{Binding Data.beat16thHigh}" Minimum="1" Maximum="1000" IsEnabled="{Binding IsBeatLinesEnabled}" />
+                                    </Grid>
+                                </StackPanel>
+                            </Border>
+
+                            <Button Content="Compile Song" Classes="accent" Command="{Binding CompileAllCommand}" IsEnabled="{Binding IsBusy, Converter={x:Static BoolConverters.Not}}" HorizontalAlignment="Stretch" Height="52" />
+                            <Button Content="{Binding CompileButtonText}" FontWeight="Bold" Command="{Binding CompilePaksCommand}" IsEnabled="{Binding CompileButtonEnabled}" HorizontalAlignment="Stretch" Height="40" />
+                        </StackPanel>
+                    </ScrollViewer>
+                </TabItem>
+
+                <!-- ============ WTDE Settings ============ -->
+                <TabItem Header="WTDE Settings" IsVisible="{Binding IsWtdeSettingsVisible, Mode=OneWay}">
+                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                        <StackPanel Spacing="6" Margin="10">
+                            <Grid ColumnDefinitions="130,*">
+                                <TextBlock Text="Game Icon:" VerticalAlignment="Center" />
+                                <ComboBox Grid.Column="1" IsEditable="True" ItemsSource="{Binding GameIconOptions}" Text="{Binding Data.gameIcon}" />
+                            </Grid>
+                            <Grid ColumnDefinitions="130,*">
+                                <TextBlock Text="Game Category:" VerticalAlignment="Center" />
+                                <ComboBox Grid.Column="1" IsEditable="True" ItemsSource="{Binding GameCategoryOptions}" SelectedItem="{Binding Data.gameCategory}" />
+                            </Grid>
+                            <Grid ColumnDefinitions="130,*">
+                                <TextBlock Text="Band:" VerticalAlignment="Center" />
+                                <TextBox Grid.Column="1" Text="{Binding Data.bandWtde}" />
+                            </Grid>
+                            <TextBlock Text="Skeletons" FontWeight="SemiBold" />
+                            <Grid ColumnDefinitions="130,*,130,*">
+                                <TextBlock Text="Guitar" VerticalAlignment="Center" />
+                                <ComboBox Grid.Column="1" IsEditable="True" ItemsSource="{Binding SkeletonOptions}" Text="{Binding Data.gSkeleton}" />
+                                <TextBlock Grid.Column="2" Text="Bass" VerticalAlignment="Center" Margin="8,0,0,0" />
+                                <ComboBox Grid.Column="3" IsEditable="True" ItemsSource="{Binding SkeletonOptions}" Text="{Binding Data.bSkeleton}" />
+                            </Grid>
+                            <Grid ColumnDefinitions="130,*,130,*">
+                                <TextBlock Text="Drums" VerticalAlignment="Center" />
+                                <ComboBox Grid.Column="1" IsEditable="True" ItemsSource="{Binding SkeletonOptions}" Text="{Binding Data.dSkeleton}" />
+                                <TextBlock Grid.Column="2" Text="Vocals" VerticalAlignment="Center" Margin="8,0,0,0" />
+                                <ComboBox Grid.Column="3" IsEditable="True" ItemsSource="{Binding SkeletonOptions}" Text="{Binding Data.vSkeleton}" />
+                            </Grid>
+                            <CheckBox Content="Use New Clips" IsChecked="{Binding Data.useNewClips}" />
+                            <CheckBox Content="Modern Strobes" IsChecked="{Binding Data.modernStrobes}" />
+                            <TextBlock Text="Career Sort Index" FontWeight="SemiBold" />
+                            <Grid ColumnDefinitions="90,90,90,90,90">
+                                <StackPanel Spacing="2">
+                                    <TextBlock Text="Guitar" />
+                                    <NumericUpDown Value="{Binding Data.guitarCareerTier}" Minimum="0" Maximum="999" />
+                                </StackPanel>
+                                <StackPanel Grid.Column="1" Spacing="2">
+                                    <TextBlock Text="Bass" />
+                                    <NumericUpDown Value="{Binding Data.bassCareerTier}" Minimum="0" Maximum="999" />
+                                </StackPanel>
+                                <StackPanel Grid.Column="2" Spacing="2">
+                                    <TextBlock Text="Drums" />
+                                    <NumericUpDown Value="{Binding Data.drumsCareerTier}" Minimum="0" Maximum="999" />
+                                </StackPanel>
+                                <StackPanel Grid.Column="3" Spacing="2">
+                                    <TextBlock Text="Vocals" />
+                                    <NumericUpDown Value="{Binding Data.vocalsCareerTier}" Minimum="0" Maximum="999" />
+                                </StackPanel>
+                                <StackPanel Grid.Column="4" Spacing="2">
+                                    <TextBlock Text="Band" />
+                                    <NumericUpDown Value="{Binding Data.bandCareerTier}" Minimum="0" Maximum="999" />
+                                </StackPanel>
+                            </Grid>
+                            <Grid ColumnDefinitions="130,*,40">
+                                <TextBlock Text="MODS Subfolder:" VerticalAlignment="Center" />
+                                <TextBox Grid.Column="1" Text="{Binding Data.modsSubfolder}" />
+                                <Button Grid.Column="2" Content="..." Command="{Binding BrowseCommand}" CommandParameter="modsSubfolder" Margin="4,0,0,0" />
+                            </Grid>
+                        </StackPanel>
+                    </ScrollViewer>
+                </TabItem>
+
+                <!-- ============ GH5+ Settings ============ -->
+                <TabItem Header="GH5+ Settings" IsVisible="{Binding IsGh5SettingsVisible, Mode=OneWay}">
+                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                        <StackPanel Spacing="6" Margin="10">
+                            <TextBlock Text="Instrument Tiers" FontWeight="SemiBold" />
+                            <Grid ColumnDefinitions="130,130,130,130,130">
+                                <StackPanel Spacing="2">
+                                    <TextBlock Text="Guitar:" />
+                                    <NumericUpDown Value="{Binding Data.guitarTier}" Minimum="0" Maximum="4" />
+                                </StackPanel>
+                                <StackPanel Grid.Column="1" Spacing="2">
+                                    <TextBlock Text="Bass:" />
+                                    <NumericUpDown Value="{Binding Data.bassTier}" Minimum="0" Maximum="4" />
+                                </StackPanel>
+                                <StackPanel Grid.Column="2" Spacing="2">
+                                    <TextBlock Text="Drums:" />
+                                    <NumericUpDown Value="{Binding Data.drumsTier}" Minimum="0" Maximum="4" />
+                                </StackPanel>
+                                <StackPanel Grid.Column="3" Spacing="2">
+                                    <TextBlock Text="Vocals:" />
+                                    <NumericUpDown Value="{Binding Data.vocalsTier}" Minimum="0" Maximum="4" />
+                                </StackPanel>
+                                <StackPanel Grid.Column="4" Spacing="2">
+                                    <TextBlock Text="Band:" />
+                                    <NumericUpDown Value="{Binding Data.bandTier}" Minimum="0" Maximum="4" />
+                                </StackPanel>
+                            </Grid>
+                        </StackPanel>
+                    </ScrollViewer>
+                </TabItem>
+
+            </TabControl>
+        </Grid>
+    </DockPanel>
+
+</Window>

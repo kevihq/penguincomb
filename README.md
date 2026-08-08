@@ -1,11 +1,11 @@
-# Honeycomb 🎸
+# PenguinComb 🎸
 
 **Play your favorite songs in Guitar Hero 3 — even if they were made for Clone Hero.**
 
-Honeycomb is a free, easy-to-use desktop program (for **Linux** and **Windows**)
+PenguinComb is a free, easy-to-use desktop program (for **Linux** and **Windows**)
 that turns your song files into custom Guitar Hero songs. No programming, no
 complicated setup — if you can pick two folders and press a button, you can use
-Honeycomb.
+PenguinComb.
 
 Created by **Kelvin Klein**.
 
@@ -15,10 +15,10 @@ Created by **Kelvin Klein**.
 
 ---
 
-## What is Honeycomb?
+## What is PenguinComb?
 
 Guitar Hero games only let you play the songs that came with them — unless you
-add your own. Honeycomb is the tool for that. It takes songs you already have
+add your own. PenguinComb is the tool for that. It takes songs you already have
 (like your Clone Hero collection) and turns them into songs your Guitar Hero 3
 installation can play.
 
@@ -28,7 +28,7 @@ Some examples of what you can do:
   GH3 game folder, press Convert. Done. (One button: **"Clone Hero to Better
   GH3"** on the main screen.)
 * **Convert many songs at once** — queue up a whole folder of songs and let
-  Honeycomb work through them one by one, telling you which ones worked and
+  PenguinComb work through them one by one, telling you which ones worked and
   which ones didn't.
 * **Build songs from scratch** — write your own charts and compile them into
   playable Guitar Hero songs (GH3, World Tour, and more).
@@ -43,16 +43,16 @@ below for the full platform table.
 
 | Platform | What to download | How to run |
 |---|---|---|
-| **Linux** | `Honeycomb-<version>-x86_64.AppImage` | Download, `chmod +x`, double-click or run — no installation, no .NET, nothing else to install |
-| **Windows** | `honeycomb-win-x64.zip` | Unzip anywhere, run `Honeycomb.exe` (install the **.NET 8 Desktop Runtime** once if asked) |
+| **Linux** | `PenguinComb-<version>-x86_64.AppImage` | Download, `chmod +x`, double-click or run — no installation, no .NET, nothing else to install |
+| **Windows** | `penguincomb-win-x64.zip` | Unzip anywhere, run `PenguinComb.exe` (install the **.NET 8 Desktop Runtime** once if asked) |
 
 > **Linux, no FUSE?** If the AppImage doesn't start, run it once with
-> `./Honeycomb-1.0.0-x86_64.AppImage --appimage-extract-and-run` or install
+> `./PenguinComb-1.0.0-x86_64.AppImage --appimage-extract-and-run` or install
 > `libfuse2`. That's the whole fix.
 
 ## Quick start — Clone Hero to GH3 in 5 minutes
 
-1. **Open Honeycomb.**
+1. **Open PenguinComb.**
 2. Click **"Clone Hero to Better GH3"**.
 3. Click **Add Songs...** and pick the Clone Hero song folders you want
    (or **Add Library Folder...** to add a whole folder of songs at once).
@@ -65,28 +65,28 @@ Your songs will appear in Guitar Hero 3 the next time you start it.
 > **Where is my GH3 folder on Linux?** GH3 is a Windows game, so on Linux the
 > game files live inside Wine or Proton — for example
 > `~/.local/share/Steam/steamapps/compatdata/<appid>/pfx/drive_c/...` or
-> `~/.wine/drive_c/...`. Honeycomb finds and checks it for you automatically,
-> and it's fine if it's in a Wine/Proton folder — Honeycomb itself never needs
+> `~/.wine/drive_c/...`. PenguinComb finds and checks it for you automatically,
+> and it's fine if it's in a Wine/Proton folder — PenguinComb itself never needs
 > Wine to run.
 
 ## One-time setup: ffmpeg (for audio)
 
-Making a song involves mixing its audio tracks. Honeycomb uses **ffmpeg** for
+Making a song involves mixing its audio tracks. PenguinComb uses **ffmpeg** for
 that — a free, well-known audio tool. Install it once:
 
 * **Linux:** `sudo apt install ffmpeg` (or your distro's package manager)
 * **Windows:** `winget install ffmpeg` (or download the FFmpeg "essentials"
-  build and point Honeycomb at it in **Settings → FFmpeg Folder**)
+  build and point PenguinComb at it in **Settings → FFmpeg Folder**)
 
-## Where does Honeycomb keep its files?
+## Where does PenguinComb keep its files?
 
 | What | Linux | Windows |
 |---|---|---|
-| Settings | `~/.config/honeycomb` | `%APPDATA%\Honeycomb` |
-| Backups, logs, imports | `~/.local/share/honeycomb` | `%APPDATA%\Honeycomb` |
-| Cache / temp | `~/.cache/honeycomb` | `%LOCALAPPDATA%\Honeycomb` |
+| Settings | `~/.config/penguincomb` | `%APPDATA%\PenguinComb` |
+| Backups, logs, imports | `~/.local/share/penguincomb` | `%APPDATA%\PenguinComb` |
+| Cache / temp | `~/.cache/penguincomb` | `%LOCALAPPDATA%\PenguinComb` |
 
-**Honeycomb never touches your game files without asking first.** Before the
+**PenguinComb never touches your game files without asking first.** Before the
 first compile it checks your game folder is correct and makes a backup of the
 game's `qb.pak` files — so nothing can go wrong that you can't undo.
 
@@ -97,7 +97,7 @@ Open an issue on GitHub (the "Issues" tab) and tell us:
 1. Your system (Windows, or Linux distro + desktop environment),
 2. What you were doing when it went wrong,
 3. The log file — it's in the "Backups, logs, imports" folder above,
-   `Logs/honeycomb.log`. It tells us exactly what happened.
+   `Logs/penguincomb.log`. It tells us exactly what happened.
 
 We read every issue. Please don't be shy about asking.
 
@@ -105,17 +105,17 @@ We read every issue. Please don't be shy about asking.
 
 # For developers and contributors
 
-This half is for people who want to build, extend or contribute to Honeycomb.
+This half is for people who want to build, extend or contribute to PenguinComb.
 
-## What Honeycomb is, technically
+## What PenguinComb is, technically
 
 A cross-platform desktop application for creating and managing Guitar Hero
-custom songs. Honeycomb is a native **Avalonia UI** port of the classic
+custom songs. PenguinComb is a native **Avalonia UI** port of the classic
 Windows-only *Guitar Hero Toolkit* GUI. One .NET 8 / C# codebase builds and
-runs natively on **Linux** and **Windows** — no Wine required for Honeycomb
+runs natively on **Linux** and **Windows** — no Wine required for PenguinComb
 itself.
 
-Honeycomb does **not** reimplement any game file formats: all PAK, QB, WAD,
+PenguinComb does **not** reimplement any game file formats: all PAK, QB, WAD,
 SGH, MIDI/CHART, SKA, audio and checksum work is delegated to the
 [GH-Toolkit-NET](https://github.com/AddyMills/GH-Toolkit-NET) library (pinned as
 a submodule), the same algorithms used by the original GUI and the
@@ -125,16 +125,16 @@ a submodule), the same algorithms used by the original GUI and the
 
 | Project | Responsibility |
 |---|---|
-| `src/Honeycomb.App` | Avalonia UI: views, view models, startup, styles, assets |
-| `src/Honeycomb.Application` | Use cases: song compilation, SGH import, PAK/WAD, batch + Clone Hero flows, validation |
-| `src/Honeycomb.Infrastructure` | Settings (JSON), dialogs, process execution, game/tool locators, per-user directories |
+| `src/PenguinComb.App` | Avalonia UI: views, view models, startup, styles, assets |
+| `src/PenguinComb.Application` | Use cases: song compilation, SGH import, PAK/WAD, batch + Clone Hero flows, validation |
+| `src/PenguinComb.Infrastructure` | Settings (JSON), dialogs, process execution, game/tool locators, per-user directories |
 | `external/GH-Toolkit` | Pinned submodule: file-format and compilation algorithms |
-| `tests/Honeycomb.Tests` | Unit + integration + headless Avalonia smoke tests |
+| `tests/PenguinComb.Tests` | Unit + integration + headless Avalonia smoke tests |
 
 Platform-specific behavior goes behind interfaces
 (`IPlatformService`, `ISettingsService`, `IFileDialogService`,
 `IExternalProcessService`, `IGameInstallLocator`, `IExternalToolLocator`);
-Windows-only implementations live in `Honeycomb.Infrastructure` and are guarded
+Windows-only implementations live in `PenguinComb.Infrastructure` and are guarded
 by runtime platform checks. No shared project references WinForms or the
 Windows Registry.
 
@@ -178,13 +178,13 @@ Windows Registry.
 
 * **ffmpeg + ffprobe** (required for audio compilation; MP3/OGG/FLAC/WAV stems
   are mixed and encoded through ffmpeg). Install via your package manager or
-  point Honeycomb at a folder containing both binaries in
+  point PenguinComb at a folder containing both binaries in
   **Settings → FFmpeg Folder**.
 * **Onyx CLI** (required only for Xbox 360 STFS and PS3 PKG package creation).
   Select the `onyx`/`onyx.exe` executable in **Settings → Onyx CLI Path** when
   prompted. On Linux any executable named `onyx` on your PATH is auto-detected.
 * **Wine/Proton** is only relevant for *locating Windows game installations*
-  on Linux — Honeycomb itself never runs under Wine.
+  on Linux — PenguinComb itself never runs under Wine.
 
 ## Selecting a Guitar Hero installation on Linux
 
@@ -196,7 +196,7 @@ Wine or Proton prefix:
   `~/.local/share/Steam/steamapps/compatdata/<appid>/pfx/drive_c/...`
   (also flatpak `~/.var/app/com.valvesoftware.Steam/...`)
 
-Honeycomb searches these locations automatically and validates the **data
+PenguinComb searches these locations automatically and validates the **data
 layout** (`DATA/PAK/qb.pak.xen`, `DATA/MUSIC`, `DATA/SONGS`, and
 `DATA/patch.pak.xen` for GH3) — it does not require a runnable Windows
 executable. If automatic discovery fails, use the manual browse option; the
@@ -206,10 +206,10 @@ chosen folder is remembered in Settings.
 
 | Purpose | Linux | Windows |
 |---|---|---|
-| Settings (`settings.json`) | `$XDG_CONFIG_HOME/honeycomb` (default `~/.config/honeycomb`) | `%APPDATA%\Honeycomb` |
-| Game QB backups, templates, logs | `$XDG_DATA_HOME/honeycomb` (default `~/.local/share/honeycomb`) | `%APPDATA%\Honeycomb` |
-| Cache/temp | `$XDG_CACHE_HOME/honeycomb` (default `~/.cache/honeycomb`) | `%LOCALAPPDATA%\Honeycomb` |
-| Toolkit user keys (`keys_user.txt`, `keys_qs_user.txt`) | `$XDG_DATA_HOME/Honeycomb/QBDebug` (default `~/.local/share/Honeycomb/QBDebug`) | `%LOCALAPPDATA%\Honeycomb\QBDebug` |
+| Settings (`settings.json`) | `$XDG_CONFIG_HOME/penguincomb` (default `~/.config/penguincomb`) | `%APPDATA%\PenguinComb` |
+| Game QB backups, templates, logs | `$XDG_DATA_HOME/penguincomb` (default `~/.local/share/penguincomb`) | `%APPDATA%\PenguinComb` |
+| Cache/temp | `$XDG_CACHE_HOME/penguincomb` (default `~/.cache/penguincomb`) | `%LOCALAPPDATA%\PenguinComb` |
+| Toolkit user keys (`keys_user.txt`, `keys_qs_user.txt`) | `$XDG_DATA_HOME/PenguinComb/QBDebug` (default `~/.local/share/PenguinComb/QBDebug`) | `%LOCALAPPDATA%\PenguinComb\QBDebug` |
 
 Game files are only ever modified *after* validation and a one-time backup of
 `DATA/PAK/qb.pak.xen` + `qb.pab.xen` into the data directory. The bundled debug
@@ -227,19 +227,19 @@ Prerequisites: .NET SDK 8+, git.
 ```sh
 # 1. Clone this repository (including the pinned GH-Toolkit submodule).
 #    Replace the URL below with your fork when contributing.
-git clone --recursive https://github.com/your-name/honeycomb.git
-cd honeycomb
+git clone --recursive https://github.com/your-name/penguincomb.git
+cd penguincomb
 
 # 2. Apply the GH-Toolkit cross-platform patches (idempotent)
 ./scripts/init-deps.sh        # Windows: sh scripts/init-deps.sh (git bash)
 
 # 3. Build & test
-dotnet restore Honeycomb.sln
-dotnet build Honeycomb.sln -c Release
-dotnet test Honeycomb.sln -c Release
+dotnet restore PenguinComb.sln
+dotnet build PenguinComb.sln -c Release
+dotnet test PenguinComb.sln -c Release
 
 # 4. Run
-dotnet run --project src/Honeycomb.App
+dotnet run --project src/PenguinComb.App
 ```
 
 ### Notes on the GH-Toolkit dependency
@@ -270,9 +270,9 @@ patches instead.
 ./scripts/build-appimage.sh             # single-file self-contained AppImage
 ```
 
-Outputs land in `artifacts/`. The AppImage (`Honeycomb-<version>-x86_64.AppImage`)
+Outputs land in `artifacts/`. The AppImage (`PenguinComb-<version>-x86_64.AppImage`)
 is the recommended distribution for end users: one file, no dependencies to
-install. The Linux tarball includes the binary, the `honeycomb.desktop` entry
+install. The Linux tarball includes the binary, the `penguincomb.desktop` entry
 and the SVG icon.
 
 CI (GitHub Actions) restores, builds, tests, publishes `linux-x64` and
@@ -291,7 +291,7 @@ git tag v1.0.0
 git push origin v1.0.0
 ```
 
-The **AppImage** (`Honeycomb-<version>-x86_64.AppImage`) is the single Linux
+The **AppImage** (`PenguinComb-<version>-x86_64.AppImage`) is the single Linux
 file to link on the release page: download, `chmod +x`, run — no .NET or FUSE
 required (it self-extracts with `--appimage-extract-and-run` when FUSE is
 missing).
@@ -313,14 +313,14 @@ missing).
 Please open an issue with:
 
 1. Your OS/distribution and desktop environment,
-2. Honeycomb version (shown on the main window and printed in the log),
+2. PenguinComb version (shown on the main window and printed in the log),
 3. The relevant section of the log file (see the storage table above,
-   `Logs/honeycomb.log`),
+   `Logs/penguincomb.log`),
 4. Steps to reproduce, and whether the same action works on the other platform.
 
 ## License and attribution
 
-* Honeycomb is **GPL-3.0** (see `LICENSE`).
+* PenguinComb is **GPL-3.0** (see `LICENSE`).
 * This project is a **cross-platform port of Honeycomb-GUI** by **AddyMills**
   (GPL-3.0). Original project, branding, workflows and the core file-format
   algorithms belong to AddyMills (`Honeycomb-GUI`, `GH-Toolkit-NET`,

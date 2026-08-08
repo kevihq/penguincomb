@@ -534,7 +534,7 @@ index 40fdc8e..bdee4bc 100644
      }
  }
 diff --git a/PAK/PAK.cs b/PAK/PAK.cs
-index 7342fa5..bc0a459 100644
+index 7342fa5..c3bc890 100644
 --- a/PAK/PAK.cs
 +++ b/PAK/PAK.cs
 @@ -25,11 +25,8 @@ using GH_Toolkit_Core.Checksum;
@@ -557,7 +557,7 @@ index 7342fa5..bc0a459 100644
 -            foreach (PakEntry entry in entries)
 +            // Honeycomb patch: extract QS entries to the system temp directory, not
 +            // next to the executable - the app folder may be read-only (AppImage).
-+            string tempDir = Path.Combine(Path.GetTempPath(), "Honeycomb", Guid.NewGuid().ToString("N"));
++            string tempDir = Path.Combine(Path.GetTempPath(), "PenguinComb", Guid.NewGuid().ToString("N"));
 +            Directory.CreateDirectory(tempDir);
 +            try
              {
@@ -683,7 +683,7 @@ index 1897d61..df15e13 100644
              }
          }
 diff --git a/QBDebug/DebugReader.cs b/QBDebug/DebugReader.cs
-index 26d0830..609cbb4 100644
+index 26d0830..b16cca7 100644
 --- a/QBDebug/DebugReader.cs
 +++ b/QBDebug/DebugReader.cs
 @@ -17,6 +17,50 @@ namespace GH_Toolkit_Core.Debug
@@ -717,7 +717,7 @@ index 26d0830..609cbb4 100644
 +                try
 +                {
 +                    Directory.CreateDirectory(legacy);
-+                    string probe = Path.Combine(legacy, ".honeycomb_write_probe");
++                    string probe = Path.Combine(legacy, ".penguincomb_write_probe");
 +                    using (File.Create(probe)) { }
 +                    File.Delete(probe);
 +                    _userKeyFolder = legacy;
@@ -726,7 +726,7 @@ index 26d0830..609cbb4 100644
 +                {
 +                    string fallback = Path.Combine(
 +                        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-+                        "Honeycomb", "QBDebug");
++                        "PenguinComb", "QBDebug");
 +                    try { Directory.CreateDirectory(fallback); } catch { }
 +                    _userKeyFolder = fallback;
 +                }

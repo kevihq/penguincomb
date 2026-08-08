@@ -1,5 +1,5 @@
 #!/usr/bin/env sh
-# Initializes the pinned GH-Toolkit submodule and applies the Honeycomb cross-platform
+# Initializes the pinned GH-Toolkit submodule and applies the PenguinComb cross-platform
 # patches. Run this once after cloning (or after `git submodule update --init`).
 #
 # Usage: scripts/init-deps.sh
@@ -20,12 +20,12 @@ if [ ! -f "$TOOLKIT/GH-Toolkit-Core.csproj" ]; then
 fi
 
 # Detect whether the patch is already applied (check for a marker line we introduced).
-if grep -q "Honeycomb patch" "$TOOLKIT/Methods/GlobalVariables.cs" 2>/dev/null; then
+if grep -q "PenguinComb patch" "$TOOLKIT/Methods/GlobalVariables.cs" 2>/dev/null; then
     echo "GH-Toolkit patches already applied."
     exit 0
 fi
 
-echo "Applying Honeycomb cross-platform patches to GH-Toolkit..."
+echo "Applying PenguinComb cross-platform patches to GH-Toolkit..."
 git -C "$TOOLKIT" apply --check "$PATCH"
 git -C "$TOOLKIT" apply "$PATCH"
 echo "Done. GH-Toolkit is patched and ready to build."
