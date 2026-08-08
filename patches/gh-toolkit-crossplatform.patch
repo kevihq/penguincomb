@@ -472,7 +472,7 @@ index 40fdc8e..bdee4bc 100644
      }
  }
 diff --git a/PAK/PAK.cs b/PAK/PAK.cs
-index 7342fa5..4893f30 100644
+index 7342fa5..bc0a459 100644
 --- a/PAK/PAK.cs
 +++ b/PAK/PAK.cs
 @@ -25,11 +25,8 @@ using GH_Toolkit_Core.Checksum;
@@ -487,7 +487,88 @@ index 7342fa5..4893f30 100644
  
  /*
   * * This file is intended to be a collection of custom methods to read and create PAK files
-@@ -1970,15 +1967,19 @@ namespace GH_Toolkit_Core.PAK
+@@ -523,41 +520,51 @@ namespace GH_Toolkit_Core.PAK
+         }
+         private static void CheckForQsFilesInPak(List<PakEntry> entries) 
+         {
+-            
+-            foreach (PakEntry entry in entries)
++            // Honeycomb patch: extract QS entries to the system temp directory, not
++            // next to the executable - the app folder may be read-only (AppImage).
++            string tempDir = Path.Combine(Path.GetTempPath(), "Honeycomb", Guid.NewGuid().ToString("N"));
++            Directory.CreateDirectory(tempDir);
++            try
+             {
+-                if (entry.Extension.Contains(DOT_QS, StringComparison.CurrentCultureIgnoreCase))
++                foreach (PakEntry entry in entries)
+                 {
+-                    string tempSavePath = Path.Combine(ExeRootFolder, entry.FullName);
+-                    if (!Directory.Exists(Path.GetDirectoryName(tempSavePath)))
+-                    {
+-                        Directory.CreateDirectory(Path.GetDirectoryName(tempSavePath)!);
+-                    }
+-                    File.WriteAllBytes(tempSavePath, entry.EntryData);
+-                    QsDict dictMod;
+-                    switch (Path.GetExtension(entry.Extension))
++                    if (entry.Extension.Contains(DOT_QS, StringComparison.CurrentCultureIgnoreCase))
+                     {
+-                        case DOTFR:
+-                            dictMod = QsDict.Fr;
+-                            break;
+-                        case DOTDE:
+-                            dictMod = QsDict.De;
+-                            break;
+-                        case DOTIT:
+-                            dictMod = QsDict.It;
+-                            break;
+-                        case DOTES:
+-                            dictMod = QsDict.Es;
+-                            break;
+-                        case DOTEN:
+-                        default:
+-                            dictMod = QsDict.En;
+-                            break;
++                        string tempSavePath = Path.Combine(tempDir, entry.FullName);
++                        if (!Directory.Exists(Path.GetDirectoryName(tempSavePath)))
++                        {
++                            Directory.CreateDirectory(Path.GetDirectoryName(tempSavePath)!);
++                        }
++                        File.WriteAllBytes(tempSavePath, entry.EntryData);
++                        QsDict dictMod;
++                        switch (Path.GetExtension(entry.Extension))
++                        {
++                            case DOTFR:
++                                dictMod = QsDict.Fr;
++                                break;
++                            case DOTDE:
++                                dictMod = QsDict.De;
++                                break;
++                            case DOTIT:
++                                dictMod = QsDict.It;
++                                break;
++                            case DOTES:
++                                dictMod = QsDict.Es;
++                                break;
++                            case DOTEN:
++                            default:
++                                dictMod = QsDict.En;
++                                break;
++                        }
++                        AddToQsDictTemp(tempSavePath, dictMod);
++                        File.Delete(tempSavePath);
+                     }
+-                    AddToQsDictTemp(tempSavePath, dictMod);
+-                    File.Delete(tempSavePath);
+                 }
+             }
++            finally
++            {
++                try { Directory.Delete(tempDir, true); } catch { }
++            }
+         }
+         private static 
+             (
+@@ -1970,15 +1977,19 @@ namespace GH_Toolkit_Core.PAK
                  string relPath = Path.GetRelativePath(folderPath, entry).ToLower();
                  if (ConsoleType == CONSOLE_PS2)
                  {
@@ -539,3 +620,186 @@ index 1897d61..df15e13 100644
                  sectorIndex += entry.paddedSize / SECTORSIZE;
              }
          }
+diff --git a/QBDebug/DebugReader.cs b/QBDebug/DebugReader.cs
+index 26d0830..609cbb4 100644
+--- a/QBDebug/DebugReader.cs
++++ b/QBDebug/DebugReader.cs
+@@ -17,6 +17,50 @@ namespace GH_Toolkit_Core.Debug
+     {
+         private static readonly Lazy<DebugData> _data = new(() => new DebugData());
+ 
++        private static string _userKeyFolder = "";
++        private static readonly object UserKeyFolderLock = new();
++
++        /// <summary>
++        /// Writable folder for user-added checksum keys. The legacy location next to
++        /// the executable is used when writable; otherwise (e.g. AppImage mounts the
++        /// app folder read-only) a per-user data folder is used.
++        /// Honeycomb patch: prevents "Read-only file system" failures when the app
++        /// runs from a read-only mount.
++        /// </summary>
++        private static string GetUserKeyFolder()
++        {
++            if (_userKeyFolder.Length > 0)
++            {
++                return _userKeyFolder;
++            }
++            lock (UserKeyFolderLock)
++            {
++                if (_userKeyFolder.Length > 0)
++                {
++                    return _userKeyFolder;
++                }
++
++                string legacy = Path.Combine(ExeRootFolder, "QBDebug");
++                try
++                {
++                    Directory.CreateDirectory(legacy);
++                    string probe = Path.Combine(legacy, ".honeycomb_write_probe");
++                    using (File.Create(probe)) { }
++                    File.Delete(probe);
++                    _userKeyFolder = legacy;
++                }
++                catch
++                {
++                    string fallback = Path.Combine(
++                        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
++                        "Honeycomb", "QBDebug");
++                    try { Directory.CreateDirectory(fallback); } catch { }
++                    _userKeyFolder = fallback;
++                }
++                return _userKeyFolder;
++            }
++        }
++
+         public static readonly object ChecksumDbgLock = new();
+         public static readonly object QsDbgLock = new();
+ 
+@@ -46,8 +90,8 @@ namespace GH_Toolkit_Core.Debug
+             public Dictionary<uint, string> QsDbgS { get; }
+             public Dictionary<string, uint> Ps2PakDbg { get; }
+ 
+-            public StreamWriter QbUserWriter { get; }
+-            public StreamWriter QsUserWriter { get; }
++            public StreamWriter? QbUserWriter { get; }
++            public StreamWriter? QsUserWriter { get; }
+ 
+             public DebugData()
+             {
+@@ -60,12 +104,20 @@ namespace GH_Toolkit_Core.Debug
+                 QsDbgS = ReadQSDebug("_s");
+                 Ps2PakDbg = ReadPs2PakDbg();
+ 
+-                // Prepare user writers
+-                var folder = Path.Combine(ExeRootFolder, "QBDebug");
+-                Directory.CreateDirectory(folder);
+-
+-                QbUserWriter = new StreamWriter(Path.Combine(folder, "keys_user.txt"), true, Encoding.UTF8) { AutoFlush = true };
+-                QsUserWriter = new StreamWriter(Path.Combine(folder, "keys_qs_user.txt"), true, Encoding.UTF8) { AutoFlush = true };
++                // Prepare user writers. Failure must never break compilation - the
++                // app folder is read-only inside AppImage mounts, so the writers
++                // fall back to a per-user folder and may end up disabled entirely.
++                try
++                {
++                    var folder = GetUserKeyFolder();
++                    QbUserWriter = new StreamWriter(Path.Combine(folder, "keys_user.txt"), true, Encoding.UTF8) { AutoFlush = true };
++                    QsUserWriter = new StreamWriter(Path.Combine(folder, "keys_qs_user.txt"), true, Encoding.UTF8) { AutoFlush = true };
++                }
++                catch
++                {
++                    QbUserWriter = null;
++                    QsUserWriter = null;
++                }
+             }
+ 
+             public void Dispose()
+@@ -85,14 +137,25 @@ namespace GH_Toolkit_Core.Debug
+             {
+                 string folder = Path.Combine(ExeRootFolder, "QBDebug");
+                 string dbg = Path.Combine(folder, "keys.txt");
+-                string user = Path.Combine(folder, "keys_user.txt");
+ 
+-                var lines = File.Exists(dbg)
+-                    ? File.ReadAllLines(dbg)
+-                    : Array.Empty<string>();
+-
+-                if (File.Exists(user))
+-                    lines = lines.Concat(File.ReadAllLines(user)).ToArray();
++                // User keys may live next to the executable (legacy layout) or in the
++                // per-user folder when the app directory is not writable.
++                var lines = new List<string>();
++                if (File.Exists(dbg))
++                {
++                    lines.AddRange(File.ReadAllLines(dbg));
++                }
++                string userFolder = GetUserKeyFolder();
++                string legacyUser = Path.Combine(folder, "keys_user.txt");
++                string userFile = Path.Combine(userFolder, "keys_user.txt");
++                if (File.Exists(legacyUser))
++                {
++                    lines.AddRange(File.ReadAllLines(legacyUser));
++                }
++                if (File.Exists(userFile) && !string.Equals(legacyUser, userFile, StringComparison.OrdinalIgnoreCase))
++                {
++                    lines.AddRange(File.ReadAllLines(userFile));
++                }
+ 
+                 var dict = new Dictionary<uint, string>();
+                 foreach (var line in lines)
+@@ -118,14 +181,25 @@ namespace GH_Toolkit_Core.Debug
+             {
+                 string folder = Path.Combine(ExeRootFolder, "QBDebug");
+                 string dbg = Path.Combine(folder, $"keys_qs{suffix}.txt");
+-                string user = Path.Combine(folder, $"keys_qs_user{suffix}.txt");
+ 
+-                var lines = File.Exists(dbg)
+-                    ? File.ReadAllLines(dbg, Encoding.BigEndianUnicode)
+-                    : Array.Empty<string>();
+-
+-                if (File.Exists(user))
+-                    lines = lines.Concat(File.ReadAllLines(user)).ToArray();
++                // User keys may live next to the executable (legacy layout) or in the
++                // per-user folder when the app directory is not writable.
++                var lines = new List<string>();
++                if (File.Exists(dbg))
++                {
++                    lines.AddRange(File.ReadAllLines(dbg, Encoding.BigEndianUnicode));
++                }
++                string userFolder = GetUserKeyFolder();
++                string legacyUser = Path.Combine(folder, $"keys_qs_user{suffix}.txt");
++                string userFile = Path.Combine(userFolder, $"keys_qs_user{suffix}.txt");
++                if (File.Exists(legacyUser))
++                {
++                    lines.AddRange(File.ReadAllLines(legacyUser));
++                }
++                if (File.Exists(userFile) && !string.Equals(legacyUser, userFile, StringComparison.OrdinalIgnoreCase))
++                {
++                    lines.AddRange(File.ReadAllLines(userFile));
++                }
+ 
+                 var dict = new Dictionary<uint, string>();
+                 foreach (var line in lines)
+@@ -184,7 +258,10 @@ namespace GH_Toolkit_Core.Debug
+         private static void AddQbKeyToUser(string key, string value)
+         {
+             lock (ChecksumDbgLock)
+-                _data.Value.QbUserWriter.WriteLine($"{key}\t{value}");
++            {
++                if (_data.Value.QbUserWriter is StreamWriter writer)
++                    writer.WriteLine($"{key}\t{value}");
++            }
+         }
+ 
+         public static void AddQbKeyToUser(uint key, string value) =>
+@@ -193,7 +270,10 @@ namespace GH_Toolkit_Core.Debug
+         private static void AddQsKeyToUser(string key, string value)
+         {
+             lock (QsDbgLock)
+-                _data.Value.QsUserWriter.WriteLine($"{key}\t{value}");
++            {
++                if (_data.Value.QsUserWriter is StreamWriter writer)
++                    writer.WriteLine($"{key}\t{value}");
++            }
+         }
+ 
+         public static void AddQsKeyToUser(uint key, string value) =>

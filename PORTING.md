@@ -105,6 +105,14 @@ Behavior notes:
    a project omits them).
 7. **linux-arm64**: publishes (pure managed + Skia/HarfBuzz arm64 natives);
    `ffmpeg`/`onyx` must be available for the target architecture.
+8. **Read-only app mounts (AppImage)**: the toolkit no longer writes beside the
+   executable. User checksum keys (`keys_user.txt`/`keys_qs_user.txt`) go to the
+   app folder when writable, otherwise to the per-user data folder
+   (`$XDG_DATA_HOME/Honeycomb/QBDebug` on Linux, `%LOCALAPPDATA%\Honeycomb\QBDebug`
+   on Windows); writer failures degrade gracefully instead of failing compilation.
+   Temporary QS extraction in PAK compilation uses the system temp directory.
+   Bundled `QBDebug/keys*.txt` and `PS2Pak.dbg` remain read-only resources read
+   from the app folder.
 
 ## 5. Final validation checklist
 

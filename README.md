@@ -124,9 +124,13 @@ chosen folder is remembered in Settings.
 | Settings (`settings.json`) | `$XDG_CONFIG_HOME/honeycomb` (default `~/.config/honeycomb`) | `%APPDATA%\Honeycomb` |
 | Game QB backups, templates, logs | `$XDG_DATA_HOME/honeycomb` (default `~/.local/share/honeycomb`) | `%APPDATA%\Honeycomb` |
 | Cache/temp | `$XDG_CACHE_HOME/honeycomb` (default `~/.cache/honeycomb`) | `%LOCALAPPDATA%\Honeycomb` |
+| Toolkit user keys (`keys_user.txt`, `keys_qs_user.txt`) | `$XDG_DATA_HOME/Honeycomb/QBDebug` (default `~/.local/share/Honeycomb/QBDebug`) | `%LOCALAPPDATA%\Honeycomb\QBDebug` |
 
 Game files are only ever modified *after* validation and a one-time backup of
-`DATA/PAK/qb.pak.xen` + `qb.pab.xen` into the data directory.
+`DATA/PAK/qb.pak.xen` + `qb.pab.xen` into the data directory. The bundled debug
+key files (`QBDebug/keys.txt`, `PS2Pak.dbg`) are read-only resources shipped with
+the app; user-added keys are written to the per-user folders above so the app
+works even when it runs from a read-only location (e.g. an AppImage mount).
 
 On Windows, a one-time migration imports your old `UserPreferences` from the
 legacy application on first run.
