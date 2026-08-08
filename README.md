@@ -148,9 +148,10 @@ legacy application on first run.
 Prerequisites: .NET SDK 8+, git.
 
 ```sh
-# 1. Clone (including the pinned GH-Toolkit submodule)
-git clone --recursive https://github.com/AddyMills/Honeycomb-GUI.git
-cd Honeycomb-GUI
+# 1. Clone this repository (including the pinned GH-Toolkit submodule).
+#    Replace the URL below with your fork when contributing.
+git clone --recursive https://github.com/your-name/honeycomb.git
+cd honeycomb
 
 # 2. Apply the GH-Toolkit cross-platform patches (idempotent)
 ./scripts/init-deps.sh        # Windows: sh scripts/init-deps.sh (git bash)
@@ -202,6 +203,22 @@ CI (GitHub Actions) restores, builds, tests, publishes `linux-x64` and
 WinForms/Registry references leak into shared projects or when resource casing
 breaks.
 
+### GitHub Releases
+
+Push a `v*` tag and the `release` workflow builds everything and attaches it to
+the **GitHub Release** page - the Linux AppImage, the Linux tarball and the
+Windows archive:
+
+```sh
+git tag v1.0.0
+git push origin v1.0.0
+```
+
+The **AppImage** (`Honeycomb-<version>-x86_64.AppImage`) is the single Linux
+file to link on the release page: download, `chmod +x`, run - no .NET or FUSE
+required (it self-extracts with `--appimage-extract-and-run` when FUSE is
+missing).
+
 ## Known limitations
 
 * Audio compilation requires external `ffmpeg`/`ffprobe` (same as the original
@@ -226,8 +243,15 @@ Please open an issue with:
 
 ## License and attribution
 
-* Honeycomb is **GPL-3.0** (see `LICENSE`). Original project and branding by
-  **AddyMills** (`Honeycomb-GUI`, `GH-Toolkit-NET`, `Honeycomb-CLI`).
+* Honeycomb is **GPL-3.0** (see `LICENSE`).
+* This project is a **cross-platform port of Honeycomb-GUI** by **AddyMills**
+  (GPL-3.0). Original project, branding, workflows and the core file-format
+  algorithms belong to AddyMills (`Honeycomb-GUI`, `GH-Toolkit-NET`,
+  `Honeycomb-CLI`); see the upstream repositories.
+* The GH-Toolkit core is consumed as a **pinned git submodule** with a small
+  documented cross-platform patch set (`patches/`), never vendored or forked.
+* `legacy/Honeycomb-GUI` contains the original WinForms source for reference
+  (GPL-3.0, with its own LICENSE file).
 * The GUI port is derived from `Honeycomb-GUI` and keeps its feature set and
   project file format.
 

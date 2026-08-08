@@ -1,0 +1,53 @@
+name: release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Initialize dependencies (submodule + patches)
+        run: ./scripts/init-deps.sh
+
+      - name: Setup .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Publish Linux x64
+        run: ./scripts/publish.sh linux-x64
+
+      - name: Publish Windows x64 (cross-published from Linux)
+        run: ./scripts/publish.sh win-x64
+
+      - name: Build Linux AppImage (single-file)
+        run: ./scripts/build-appimage.sh
+
+      - name: Verify release assets
+        run: |
+          set -e
+          test -f artifacts/honeycomb-linux-x64.tar.gz
+          test -f artifacts/honeycomb-win-x64.tar.gz
+          APPIMAGE=$(ls artifacts/Honeycomb-*-x86_64.AppImage | head -1)
+          test -n "$APPIMAGE" -a -x "$APPIMAGE"
+          ls -lh artifacts/*.tar.gz artifacts/Honeycomb-*-x86_64.AppImage
+
+      - name: Create GitHub Release with assets
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            artifacts/honeycomb-linux-x64.tar.gz
+            artifacts/honeycomb-win-x64.tar.gz
+            artifacts/Honeycomb-*-x86_64.AppImage
+          generate_release_notes: true
