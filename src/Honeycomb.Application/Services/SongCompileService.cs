@@ -68,7 +68,8 @@ public class SongCompileService
         SongProjectState state,
         CompileOptions options,
         IProgress<string>? progress = null,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        bool suppressMessages = false)
     {
         string game = state.CurrentGame;
         Console.WriteLine($"Compiling chart and audio for {game}");
@@ -83,28 +84,28 @@ public class SongCompileService
         {
             if (game == GAME_GH3 || game == GAME_GHA)
             {
-                pakSuccess = await CompilePakGh3Async(state, options, cancellationToken);
+                pakSuccess = await CompilePakGh3Async(state, options, cancellationToken, suppressMessages);
                 if (pakSuccess)
                 {
-                    await CompileGh3AudioAsync(state, options, cancellationToken);
+                    await CompileGh3AudioAsync(state, options, cancellationToken, suppressMessages);
                     compileSuccess = true;
                 }
             }
             else if (game == GAME_GHWT)
             {
-                pakSuccess = await CompilePakGhwtAsync(state, options, cancellationToken);
+                pakSuccess = await CompilePakGhwtAsync(state, options, cancellationToken, suppressMessages);
                 if (pakSuccess)
                 {
-                    await CompileGhwtAudioAsync(state, options, encrypt: false, cancellationToken);
+                    await CompileGhwtAudioAsync(state, options, encrypt: false, cancellationToken, suppressMessages);
                     compileSuccess = true;
                 }
             }
             else
             {
-                pakSuccess = await CompilePakGh5Async(state, options, cancellationToken);
+                pakSuccess = await CompilePakGh5Async(state, options, cancellationToken, suppressMessages);
                 if (pakSuccess)
                 {
-                    await CompileGhwtAudioAsync(state, options, encrypt: true, cancellationToken);
+                    await CompileGhwtAudioAsync(state, options, encrypt: true, cancellationToken, suppressMessages);
                     compileSuccess = true;
                 }
                 MoveGh5Files(state);
@@ -150,7 +151,7 @@ public class SongCompileService
         catch (Exception ex)
         {
             compileSuccess = false;
-            await HandleExceptionAsync(ex, "Compile Failed!", cancellationToken);
+            await HandleExceptionAsync(ex, "Compile Failed!", cancellationToken, showDialog: !suppressMessages);
             return new SongCompileResult { Success = false, Error = ex };
         }
     }
@@ -258,7 +259,7 @@ public class SongCompileService
     // Per-game PAK compilation
     // =====================================================================
 
-    private async Task<bool> CompilePakGh3Async(SongProjectState state, CompileOptions options, CancellationToken ct)
+    private async Task<bool> CompilePakGh3Async(SongProjectState state, CompileOptions options, CancellationToken ct, bool suppressMessages = false)
     {
         bool success = false;
         try
@@ -281,12 +282,12 @@ public class SongCompileService
         }
         catch (Exception ex)
         {
-            await HandleExceptionAsync(ex, "Compile Failed!", ct);
+            await HandleExceptionAsync(ex, "Compile Failed!", ct, showDialog: !suppressMessages);
         }
         return success;
     }
 
-    private async Task<bool> CompilePakGhwtAsync(SongProjectState state, CompileOptions options, CancellationToken ct)
+    private async Task<bool> CompilePakGhwtAsync(SongProjectState state, CompileOptions options, CancellationToken ct, bool suppressMessages = false)
     {
         bool success = false;
         try
@@ -306,12 +307,12 @@ public class SongCompileService
         }
         catch (Exception ex)
         {
-            await HandleExceptionAsync(ex, "Compile Failed!", ct);
+            await HandleExceptionAsync(ex, "Compile Failed!", ct, showDialog: !suppressMessages);
         }
         return success;
     }
 
-    private async Task<bool> CompilePakGh5Async(SongProjectState state, CompileOptions options, CancellationToken ct)
+    private async Task<bool> CompilePakGh5Async(SongProjectState state, CompileOptions options, CancellationToken ct, bool suppressMessages = false)
     {
         bool success = false;
         try
@@ -331,7 +332,7 @@ public class SongCompileService
         }
         catch (Exception ex)
         {
-            await HandleExceptionAsync(ex, "Compile Failed!", ct);
+            await HandleExceptionAsync(ex, "Compile Failed!", ct, showDialog: !suppressMessages);
         }
         return success;
     }
@@ -626,7 +627,7 @@ public class SongCompileService
     // Audio compilation
     // =====================================================================
 
-    private async Task CompileGh3AudioAsync(SongProjectState state, CompileOptions options, CancellationToken ct)
+    private async Task CompileGh3AudioAsync(SongProjectState state, CompileOptions options, CancellationToken ct, bool suppressMessages = false)
     {
         int previewStart = state.PreviewStartTime;
         int previewLength = state.PreviewEndTime;
@@ -695,12 +696,12 @@ public class SongCompileService
         }
         catch (Exception ex)
         {
-            await HandleExceptionAsync(ex, "Audio Compilation Failed!", ct);
+            await HandleExceptionAsync(ex, "Audio Compilation Failed!", ct, showDialog: !suppressMessages);
             throw;
         }
     }
 
-    private async Task CompileGhwtAudioAsync(SongProjectState state, CompileOptions options, bool encrypt, CancellationToken ct)
+    private async Task CompileGhwtAudioAsync(SongProjectState state, CompileOptions options, bool encrypt, CancellationToken ct, bool suppressMessages = false)
     {
         int previewStart = state.PreviewStartTime;
         int previewLength = state.PreviewEndTime;
@@ -766,7 +767,7 @@ public class SongCompileService
         }
         catch (Exception ex)
         {
-            await HandleExceptionAsync(ex, "Audio Compilation Failed!", ct);
+            await HandleExceptionAsync(ex, "Audio Compilation Failed!", ct, showDialog: !suppressMessages);
             throw;
         }
     }
@@ -1431,11 +1432,14 @@ public class SongCompileService
         return false;
     }
 
-    private async Task HandleExceptionAsync(Exception ex, string title, CancellationToken ct)
+    private async Task HandleExceptionAsync(Exception ex, string title, CancellationToken ct, bool showDialog = true)
     {
         Console.WriteLine($"Exception in {title}: {ex}");
-        await _notifications.ShowErrorAsync(title,
-            $"Exception:\n\n{ex.Message}\n\nDetails have been written to the log on the main window.", ct);
+        if (showDialog)
+        {
+            await _notifications.ShowErrorAsync(title,
+                $"Exception:\n\n{ex.Message}\n\nDetails have been written to the log on the main window.", ct);
+        }
     }
 
     private static void MidiFailException(Exception ex)

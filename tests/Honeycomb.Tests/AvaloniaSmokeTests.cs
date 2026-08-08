@@ -87,6 +87,7 @@ public class AvaloniaSmokeTests
         var vm = services.GetRequiredService<MainWindowViewModel>();
 
         Assert.NotNull(vm.OpenCompileSongCommand);
+        Assert.NotNull(vm.OpenBatchCompileCommand);
         Assert.NotNull(vm.OpenImportSghCommand);
         Assert.NotNull(vm.OpenPakToolsCommand);
         Assert.NotNull(vm.OpenWadToolsCommand);
@@ -167,6 +168,10 @@ public class AvaloniaSmokeTests
         var importWindow = new ImportSghWindow { DataContext = services.GetRequiredService<ImportSghViewModel>() };
         ApplyTemplate(importWindow);
         Assert.NotNull(importWindow.Content);
+
+        var batchWindow = new BatchCompileWindow { DataContext = services.GetRequiredService<BatchCompileViewModel>() };
+        ApplyTemplate(batchWindow);
+        Assert.NotNull(batchWindow.Content);
 
         var pakWindow = new PakToolsWindow { DataContext = services.GetRequiredService<PakToolsViewModel>() };
         ApplyTemplate(pakWindow);

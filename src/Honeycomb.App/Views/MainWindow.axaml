@@ -16,6 +16,7 @@
         <Menu DockPanel.Dock="Top">
             <MenuItem Header="File">
                 <MenuItem Header="Compile a Song" Command="{Binding OpenCompileSongCommand}" />
+                <MenuItem Header="Batch Compile..." Command="{Binding OpenBatchCompileCommand}" />
                 <MenuItem Header="Import SGH Archive" Command="{Binding OpenImportSghCommand}" />
                 <MenuItem Header="PAK Tools" Command="{Binding OpenPakToolsCommand}" />
                 <MenuItem Header="PS2 Archive Tools" Command="{Binding OpenWadToolsCommand}" />
@@ -47,6 +48,7 @@
             <Button Content="PAK Tools" Command="{Binding OpenPakToolsCommand}" HorizontalAlignment="Stretch" Height="52" />
             <Button Content="PS2 Archive Tools" Command="{Binding OpenWadToolsCommand}" HorizontalAlignment="Stretch" Height="52" />
             <TextBlock Text="Other Tools" HorizontalAlignment="Center" Margin="0,8,0,0" />
+            <Button Content="Batch Compile" Command="{Binding OpenBatchCompileCommand}" HorizontalAlignment="Stretch" Height="52" />
             <Button Content="Song Manager" Command="{Binding OpenSongListManagerCommand}" HorizontalAlignment="Stretch" Height="52" />
             <Button Content="Import SGH Archive" Command="{Binding OpenImportSghCommand}" HorizontalAlignment="Stretch" Height="52" />
         </StackPanel>

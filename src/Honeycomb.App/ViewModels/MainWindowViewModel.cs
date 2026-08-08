@@ -72,6 +72,13 @@ public partial class MainWindowViewModel : ObservableObject
     }
 
     [RelayCommand]
+    private void OpenBatchCompile()
+    {
+        var window = new BatchCompileWindow { DataContext = _services.GetRequiredService<BatchCompileViewModel>() };
+        window.Show();
+    }
+
+    [RelayCommand]
     private void OpenImportSgh(string? inputFile = null)
     {
         var vm = _services.GetRequiredService<ImportSghViewModel>();

@@ -15,6 +15,9 @@ a submodule), the same algorithms used by the original GUI and the
 
 * Compile songs for **GH3**, **Guitar Hero: Aerosmith**, **GHWT**, **GH5** and
   **GHWoR** (supported consoles differ per game: PC, Xbox 360, PS2, PS3).
+* **Batch compile**: queue any number of `.ghproj` projects (or a whole folder)
+  and compile them one after another, with per-song status, progress, cancellation
+  and a results summary.
 * Import SGH archives from GHTCP to PC, or build 360/PS3 packages with Onyx.
 * Extract and compile **PAK** files (all consoles; QB files are converted to
   editable Q text and back).
