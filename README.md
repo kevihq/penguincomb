@@ -49,20 +49,40 @@ a submodule), the same algorithms used by the original GUI and the
 
 ### Linux
 
-1. Install the **.NET 8 Runtime** (see above) or use a self-contained build.
-2. Download `honeycomb-linux-x64.tar.gz` and extract it:
-   ```sh
-   tar -xzf honeycomb-linux-x64.tar.gz
-   cd honeycomb-linux-x64
-   ./Honeycomb
-   ```
-3. Optional: install the desktop entry and icon:
-   ```sh
-   install -Dm644 honeycomb.desktop ~/.local/share/applications/honeycomb.desktop
-   install -Dm644 honeycomb.svg ~/.local/share/icons/honeycomb.svg
-   ```
-4. (For framework-dependent builds only) ensure the runtime and ffmpeg exist,
-   see below.
+The easiest way to use Honeycomb on Linux is the **AppImage** - a single,
+self-contained file that includes the .NET runtime and every game resource.
+No installation, no .NET runtime to install:
+
+```sh
+# 1. Download Honeycomb-<version>-x86_64.AppImage from the latest release
+# 2. Make it executable and run it
+chmod +x Honeycomb-1.0.0-x86_64.AppImage
+./Honeycomb-1.0.0-x86_64.AppImage
+```
+
+> If your distribution does not provide FUSE (needed to mount AppImages), run
+> it with `./Honeycomb-1.0.0-x86_64.AppImage --appimage-extract-and-run` once,
+> or install `libfuse2` / use AppImageLauncher.
+
+Prefer a classic layout (or a smaller download)? Use the tar.gz build instead:
+
+```sh
+tar -xzf honeycomb-linux-x64.tar.gz
+cd honeycomb-linux-x64
+./Honeycomb
+```
+
+Optional: install the desktop entry and icon:
+
+```sh
+install -Dm644 honeycomb.desktop ~/.local/share/applications/honeycomb.desktop
+install -Dm644 honeycomb.svg ~/.local/share/icons/honeycomb.svg
+```
+
+> **Framework-dependent vs self-contained**: the tar.gz and zip builds are
+> framework-dependent and need the .NET 8 runtime. The AppImage is always
+> self-contained. `scripts/publish.sh linux-x64 self` produces a self-contained
+> tar.gz.
 
 > **Framework-dependent vs self-contained**: framework-dependent builds are
 > small (~30 MB) and need the .NET runtime. Self-contained builds include the
@@ -157,10 +177,13 @@ patches instead.
 ./scripts/publish.sh win-x64            # framework-dependent .zip/.tar.gz
 ./scripts/publish.sh linux-x64 self     # self-contained
 ./scripts/publish.sh linux-arm64        # framework-dependent (ffmpeg must be arm64)
+./scripts/build-appimage.sh             # single-file self-contained AppImage
 ```
 
-Outputs land in `artifacts/`. The Linux tarball includes the binary, the
-`honeycomb.desktop` entry and the SVG icon.
+Outputs land in `artifacts/`. The AppImage (`Honeycomb-<version>-x86_64.AppImage`)
+is the recommended distribution for end users: one file, no dependencies to
+install. The Linux tarball includes the binary, the `honeycomb.desktop` entry
+and the SVG icon.
 
 CI (GitHub Actions) restores, builds, tests, publishes `linux-x64` and
 `win-x64` and uploads both as artifacts on every push, and fails when

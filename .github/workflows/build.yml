@@ -59,6 +59,23 @@ jobs:
         if: runner.os == 'Linux'
         run: ./scripts/publish.sh linux-x64
 
+      - name: Build Linux AppImage (single-file)
+        if: runner.os == 'Linux'
+        run: ./scripts/build-appimage.sh
+
+      - name: Verify AppImage integrity
+        if: runner.os == 'Linux'
+        run: |
+          APPIMAGE=$(ls artifacts/Honeycomb-*-x86_64.AppImage | head -1)
+          test -n "$APPIMAGE"
+          MAGIC=$(dd if="$APPIMAGE" bs=1 skip=8 count=3 2>/dev/null)
+          if [ "$MAGIC" != "AI" ]; then
+            echo "::error::Invalid AppImage magic bytes"
+            exit 1
+          fi
+          test -x "$APPIMAGE"
+          echo "AppImage verified: $APPIMAGE"
+
       - name: Publish Windows x64
         if: runner.os == 'Windows'
         run: |
@@ -70,7 +87,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: honeycomb-linux-x64
-          path: artifacts/honeycomb-linux-x64.tar.gz
+          path: |
+            artifacts/honeycomb-linux-x64.tar.gz
+            artifacts/Honeycomb-*-x86_64.AppImage
 
       - name: Upload Windows artifacts
         if: runner.os == 'Windows'
