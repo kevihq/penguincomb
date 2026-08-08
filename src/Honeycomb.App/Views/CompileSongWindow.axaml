@@ -492,8 +492,8 @@
                                 </StackPanel>
                             </Border>
 
-                            <Button Content="Compile Song" Command="{Binding CompileAllCommand}" IsEnabled="{Binding IsBusy, Converter={x:Static BoolConverters.Not}}" HorizontalAlignment="Stretch" Height="40" />
-                            <Button Content="{Binding CompileButtonText}" Command="{Binding CompilePaksCommand}" IsEnabled="{Binding CompileButtonEnabled}" HorizontalAlignment="Stretch" Height="40" />
+                            <Button Content="Compile Song" Classes="accent" Command="{Binding CompileAllCommand}" IsEnabled="{Binding IsBusy, Converter={x:Static BoolConverters.Not}}" HorizontalAlignment="Stretch" Height="52" />
+                            <Button Content="{Binding CompileButtonText}" FontWeight="Bold" Command="{Binding CompilePaksCommand}" IsEnabled="{Binding CompileButtonEnabled}" HorizontalAlignment="Stretch" Height="40" />
                         </StackPanel>
                     </ScrollViewer>
                 </TabItem>

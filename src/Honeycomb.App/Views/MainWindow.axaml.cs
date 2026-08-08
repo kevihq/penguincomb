@@ -1,6 +1,7 @@
 using System.Collections.Specialized;
 using Avalonia.Controls;
 using Avalonia.Threading;
+using Avalonia.VisualTree;
 
 namespace Honeycomb.App.Views;
 
@@ -21,17 +22,32 @@ public partial class MainWindow : Window
         }
 
         vm.ConsoleLines.CollectionChanged += ConsoleLinesOnCollectionChanged;
-        ScrollToEnd();
+        ScrollToEndIfAtBottom();
     }
 
     private void ConsoleLinesOnCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
     {
-        Dispatcher.UIThread.Post(ScrollToEnd, DispatcherPriority.Background);
+        // Only stick to the bottom while the user is already there, so a long
+        // compile never yanks the view away while they are scrolling back to
+        // read earlier messages.
+        Dispatcher.UIThread.Post(ScrollToEndIfAtBottom, DispatcherPriority.Background);
     }
 
-    private void ScrollToEnd()
+    private void ScrollToEndIfAtBottom()
     {
-        if (ConsoleList.ItemCount > 0)
+        if (ConsoleList.ItemCount == 0)
+        {
+            return;
+        }
+
+        var scroll = ConsoleList.FindDescendantOfType<ScrollViewer>();
+        if (scroll is null)
+        {
+            return;
+        }
+
+        bool atBottom = scroll.Offset.Y >= scroll.Extent.Height - scroll.Viewport.Height - 8;
+        if (atBottom)
         {
             ConsoleList.ScrollIntoView(ConsoleList.Items[^1]);
         }

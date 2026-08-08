@@ -30,26 +30,27 @@
         <Border BorderBrush="#888" BorderThickness="1" CornerRadius="4">
                 <ListBox x:Name="ConsoleList"
                          ItemsSource="{Binding ConsoleLines}"
-                         MinHeight="180"
-                         MaxHeight="320"
+                         Height="240"
                          FontFamily="monospace"
                          FontSize="12" />
         </Border>
         </StackPanel>
 
+        <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
         <StackPanel Margin="20,20" Spacing="10" VerticalAlignment="Top">
             <TextBlock Text="Guitar Hero Toolkit" FontSize="24" FontWeight="Bold" HorizontalAlignment="Center" />
             <TextBlock Text="{Binding Version}" HorizontalAlignment="Center" Foreground="#999" />
 
             <TextBlock Text="{Binding FfmpegWarning}" TextWrapping="Wrap" Foreground="#b8860b" IsVisible="{Binding FfmpegWarning, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" Margin="0,6" />
 
-            <Button Content="Compile a Song" Command="{Binding OpenCompileSongCommand}" HorizontalAlignment="Stretch" Height="52" />
+            <Button Content="Compile a Song" Classes="accent" Command="{Binding OpenCompileSongCommand}" HorizontalAlignment="Stretch" Height="52" />
             <Button Content="PAK Tools" Command="{Binding OpenPakToolsCommand}" HorizontalAlignment="Stretch" Height="52" />
             <Button Content="PS2 Archive Tools" Command="{Binding OpenWadToolsCommand}" HorizontalAlignment="Stretch" Height="52" />
             <TextBlock Text="Other Tools" HorizontalAlignment="Center" Margin="0,8,0,0" />
             <Button Content="Song Manager" Command="{Binding OpenSongListManagerCommand}" HorizontalAlignment="Stretch" Height="52" />
             <Button Content="Import SGH Archive" Command="{Binding OpenImportSghCommand}" HorizontalAlignment="Stretch" Height="52" />
         </StackPanel>
+        </ScrollViewer>
 
     </DockPanel>
 
