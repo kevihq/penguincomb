@@ -4,7 +4,7 @@
         x:Class="Honeycomb.App.Views.BatchCompileWindow"
         x:DataType="vm:BatchCompileViewModel"
         Title="Batch Compile"
-        Width="720"
+        Width="800"
         Height="540"
         MinWidth="620"
         MinHeight="440"
@@ -25,15 +25,15 @@
             <TextBlock Text="{Binding StatusText}" TextWrapping="Wrap" />
             <ProgressBar Minimum="0" Maximum="{Binding ProgressMaximum}" Value="{Binding ProgressValue}" Height="8" />
 
-            <Grid ColumnDefinitions="Auto,Auto,Auto,Auto,Auto,*,Auto,Auto">
-                <Button Grid.Column="0" Content="Add .ghproj Files..." Command="{Binding AddFilesCommand}" IsEnabled="{Binding IsBusy, Converter={x:Static BoolConverters.Not}}" />
-                <Button Grid.Column="1" Content="Add Clone Hero Songs..." Command="{Binding AddChSongsCommand}" IsEnabled="{Binding IsBusy, Converter={x:Static BoolConverters.Not}}" Margin="6,0,0,0" />
-                <Button Grid.Column="2" Content="Add Clone Hero Folder..." Command="{Binding AddChLibraryCommand}" IsEnabled="{Binding IsBusy, Converter={x:Static BoolConverters.Not}}" Margin="6,0,0,0" />
-                <Button Grid.Column="3" Content="Remove" Command="{Binding RemoveSelectedCommand}" IsEnabled="{Binding IsBusy, Converter={x:Static BoolConverters.Not}}" Margin="6,0,0,0" />
-                <Button Grid.Column="4" Content="Clear" Command="{Binding ClearCommand}" IsEnabled="{Binding IsBusy, Converter={x:Static BoolConverters.Not}}" Margin="6,0,0,0" />
-                <Button Grid.Column="6" Content="Compile All" Classes="accent" Command="{Binding CompileAllCommand}" Margin="6,0,0,0" />
-                <Button Grid.Column="7" Content="Cancel" Command="{Binding CancelCommand}" IsEnabled="{Binding IsBusy}" Margin="6,0,0,0" />
-            </Grid>
+            <WrapPanel Orientation="Horizontal">
+                <Button Content="Add .ghproj Files..." Command="{Binding AddFilesCommand}" IsEnabled="{Binding IsBusy, Converter={x:Static BoolConverters.Not}}" Margin="0,0,6,4" />
+                <Button Content="Add Clone Hero Songs..." Command="{Binding AddChSongsCommand}" IsEnabled="{Binding IsBusy, Converter={x:Static BoolConverters.Not}}" Margin="0,0,6,4" />
+                <Button Content="Add Clone Hero Folder..." Command="{Binding AddChLibraryCommand}" IsEnabled="{Binding IsBusy, Converter={x:Static BoolConverters.Not}}" Margin="0,0,6,4" />
+                <Button Content="Remove" Command="{Binding RemoveSelectedCommand}" IsEnabled="{Binding IsBusy, Converter={x:Static BoolConverters.Not}}" Margin="0,0,6,4" />
+                <Button Content="Clear" Command="{Binding ClearCommand}" IsEnabled="{Binding IsBusy, Converter={x:Static BoolConverters.Not}}" Margin="0,0,6,4" />
+                <Button Content="Compile All" Classes="accent" Command="{Binding CompileAllCommand}" Margin="0,0,6,4" />
+                <Button Content="Cancel" Command="{Binding CancelCommand}" IsEnabled="{Binding IsBusy}" Margin="0,0,6,4" />
+            </WrapPanel>
         </StackPanel>
 
         <TextBlock DockPanel.Dock="Top" Text="Songs to compile:" FontWeight="SemiBold" Margin="0,0,0,6" />
