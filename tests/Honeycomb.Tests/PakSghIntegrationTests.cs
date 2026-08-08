@@ -14,6 +14,7 @@ namespace Honeycomb.Tests;
 /// the cross-platform application services (PAK compile/extract and SGH import).
 /// Fixtures are generated programmatically - no copyrighted game files involved.
 /// </summary>
+[Collection("ToolkitDebugState")]
 public class PakSghIntegrationTests : IDisposable
 {
     private readonly string _root = Path.Combine(Path.GetTempPath(), "honeycomb-tests", Guid.NewGuid().ToString("N"));

@@ -9,6 +9,7 @@ namespace Honeycomb.Tests;
 /// checksums are computed on normalized (backslash) names regardless of the host OS,
 /// and the compile services keep forward-slash/backslash conversions correct.
 /// </summary>
+[Collection("ToolkitDebugState")]
 public class ArchivePathTests
 {
     [Theory]

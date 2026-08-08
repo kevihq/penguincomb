@@ -287,10 +287,72 @@ index 54de696..eb78023 100644
  
  </Project>
 diff --git a/Methods/CreateForGame.cs b/Methods/CreateForGame.cs
-index c1b6928..a79be1d 100644
+index c1b6928..959e8ca 100644
 --- a/Methods/CreateForGame.cs
 +++ b/Methods/CreateForGame.cs
-@@ -623,7 +623,9 @@ namespace GH_Toolkit_Core.Methods
+@@ -467,6 +467,28 @@ namespace GH_Toolkit_Core.Methods
+             }
+         }
+         
++        /// <summary>
++        /// Locates a PAK entry by name. Falls back to the QBKey checksum form and,
++        /// for hashed entries (FullName "0x{name}.0x{ext}.{ext}"), to matching the
++        /// leading checksum portion. Honeycomb patch: the bundled BetterGH3
++        /// customs.pak.xen stores its songlist under a hashed name, so a plain name
++        /// lookup fails on fresh installs.
++        /// </summary>
++        private static PakEntry FindPakEntry(Dictionary<string, PakEntry> qbPak, string name)
++        {
++            if (qbPak.TryGetValue(name, out var entry))
++            {
++                return entry;
++            }
++            string qbKey = QBKey(name);
++            if (qbPak.TryGetValue(qbKey, out entry))
++            {
++                return entry;
++            }
++            entry = qbPak.FirstOrDefault(kvp => kvp.Key.StartsWith(qbKey + ".", StringComparison.OrdinalIgnoreCase)).Value;
++            return entry ?? throw new Exception($"Song list entry not found: {name}");
++        }
++
+         public static (PakEntry, Dictionary<string, QBItem>, QBArrayNode, QBStructData) GetSongListPak(Dictionary<string, PakEntry> qbPak)
+         {
+             string songlistString;
+@@ -485,22 +507,7 @@ namespace GH_Toolkit_Core.Methods
+                 songlistArray = downloadSonglist;
+                 songlistProps = downloadProps;
+             }
+-            PakEntry? songList = null;
+-            try
+-            {
+-                songList = qbPak[songlistString];
+-            }
+-            catch (KeyNotFoundException)
+-            {
+-                try
+-                {
+-                    songList = qbPak[QBKey(songlistString)];
+-                }
+-                catch (KeyNotFoundException)
+-                {
+-                    throw new Exception($"Song list entry not found: {songlistString}");
+-                }
+-            }
++            PakEntry songList = FindPakEntry(qbPak, songlistString);
+              
+             var songListEntries = QbEntryDictFromBytes(songList.EntryData, "big");
+             var dlSongList = songListEntries[songlistArray].Data as QBArrayNode;
+@@ -510,7 +517,7 @@ namespace GH_Toolkit_Core.Methods
+ 
+         public static (PakEntry, Dictionary<string, QBItem>, QBStructData) GetDownloadPak(Dictionary<string, PakEntry> qbPak)
+         {
+-            var downloadQb = qbPak[downloadRef];
++            var downloadQb = FindPakEntry(qbPak, downloadRef);
+             var downloadQbEntries = QbEntryDictFromBytes(downloadQb.EntryData, "big");
+             var downloadlist = downloadQbEntries[gh3DownloadSongs].Data as QBStructData;
+             return (downloadQb, downloadQbEntries, downloadlist);
+@@ -623,7 +630,9 @@ namespace GH_Toolkit_Core.Methods
                  var (songlist, _) = ParseQFromFile(songlistPath);
                  FileCreation.AddToSonglistGh3(songlist, songListEntry);
                  string localeDirectory = Path.Combine(compilePath, $"dl{checksum}_text{locale}");
@@ -301,7 +363,7 @@ index c1b6928..a79be1d 100644
                  string qbDirectory = Path.GetDirectoryName(qbFile);
                  Directory.CreateDirectory(qbDirectory);
                  var qbBytes = CompileQbFile(songlist, textChecksum, game, platform);
-@@ -638,7 +640,7 @@ namespace GH_Toolkit_Core.Methods
+@@ -638,7 +647,7 @@ namespace GH_Toolkit_Core.Methods
              var scriptChecksum = $"download\\dl{checksum}.q";
              string scriptPath = Path.Combine(gh3Resource, "script_override.q");
              string pakPath = Path.Combine(compilePath, $"dl{checksum}");
@@ -310,7 +372,7 @@ index c1b6928..a79be1d 100644
              string saveDirectory = Path.GetDirectoryName(savePath);
              Directory.CreateDirectory(saveDirectory);
              File.Copy(scriptPath, savePath, true);
-@@ -708,7 +710,7 @@ namespace GH_Toolkit_Core.Methods
+@@ -708,7 +717,7 @@ namespace GH_Toolkit_Core.Methods
              var dlcTextqb = CompileQbFile(songlistQb, textChecksum, game, platform);
              var dlcTextFolder = Path.Combine(compilePath, $"{dlcModifier}dl{checksum}_text");
  
@@ -319,7 +381,7 @@ index c1b6928..a79be1d 100644
              //var blankQs = "blank_qs.qs";
              var dlcTextQsBlank = Path.Combine(gameResource, blankScripts);
  
-@@ -717,10 +719,10 @@ namespace GH_Toolkit_Core.Methods
+@@ -717,10 +726,10 @@ namespace GH_Toolkit_Core.Methods
              Directory.CreateDirectory(Path.Combine(manifestFolder, $"download{checksum}"));
  
              var manifestQbBytes = CompileQbFile(manifestQb, manifestName, game, platform);
@@ -332,7 +394,7 @@ index c1b6928..a79be1d 100644
  
              string[] locales = ["en", "fr", "de", "it", "es"];
              foreach (string locale in locales)
-@@ -971,7 +973,24 @@ namespace GH_Toolkit_Core.Methods
+@@ -971,7 +980,24 @@ namespace GH_Toolkit_Core.Methods
          }
          public static void CompileWithOnyx(string onyxPath, string[] onyxArgs)
          {
@@ -358,7 +420,7 @@ index c1b6928..a79be1d 100644
              if (onyxArgs.Length == 0)
              {
                  throw new Exception("No arguments were provided for Onyx compilation.");
-@@ -986,45 +1005,39 @@ namespace GH_Toolkit_Core.Methods
+@@ -986,45 +1012,39 @@ namespace GH_Toolkit_Core.Methods
              if (compileType == "stfs")
              {
                  compileDir = onyxArgs[1];

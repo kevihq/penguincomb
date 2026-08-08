@@ -11,6 +11,7 @@ namespace Honeycomb.Tests;
 /// per-user writable folder instead of throwing during compilation
 /// ("Read-only file system: .../QBDebug/keys_user.txt").
 /// </summary>
+[Collection("ToolkitDebugState")]
 public class DebugReaderTests
 {
     [Fact]
@@ -29,20 +30,13 @@ public class DebugReaderTests
         Directory.CreateDirectory(xdgData);
 
         string? oldXdgData = Environment.GetEnvironmentVariable("XDG_DATA_HOME");
-        string? oldExeRoot = null;
+        string oldExeRoot = DebugReaderState.GetExeRootFolder();
         try
         {
             File.SetUnixFileMode(roDir, UnixFileMode.UserRead | UnixFileMode.UserExecute);
 
             Environment.SetEnvironmentVariable("XDG_DATA_HOME", xdgData);
-
-            var exeRootProp = typeof(GlobalVariables).GetProperty("ExeRootFolder", BindingFlags.Public | BindingFlags.Static)!;
-            oldExeRoot = (string)exeRootProp.GetValue(null)!;
-            exeRootProp.SetValue(null, roDir);
-
-            // Reset the cached folder so it is recomputed against the read-only dir.
-            typeof(DebugReader).GetField("_userKeyFolder", BindingFlags.NonPublic | BindingFlags.Static)!
-                .SetValue(null, "");
+            DebugReaderState.SetExeRootFolder(roDir);
 
             // Constructing DebugData is exactly what threw inside the AppImage
             // ("keys_user.txt" on a read-only filesystem). It must not throw, and
@@ -59,10 +53,7 @@ public class DebugReaderTests
         }
         finally
         {
-            if (oldExeRoot is not null)
-            {
-                typeof(GlobalVariables).GetProperty("ExeRootFolder", BindingFlags.Public | BindingFlags.Static)!.SetValue(null, oldExeRoot);
-            }
+            DebugReaderState.SetExeRootFolder(oldExeRoot);
             Environment.SetEnvironmentVariable("XDG_DATA_HOME", oldXdgData);
             try { File.SetUnixFileMode(roDir, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute); } catch { }
             try { Directory.Delete(roDir, true); } catch { }

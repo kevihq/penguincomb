@@ -10,6 +10,7 @@ namespace Honeycomb.Tests;
 /// async work (which deadlocks whenever the awaited work needs the dispatcher,
 /// e.g. a modal dialog or a file picker).
 /// </summary>
+[Collection("ToolkitDebugState")]
 public class UiThreadSafetyTests
 {
     /// <summary>

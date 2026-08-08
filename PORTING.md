@@ -113,6 +113,13 @@ Behavior notes:
    Temporary QS extraction in PAK compilation uses the system temp directory.
    Bundled `QBDebug/keys*.txt` and `PS2Pak.dbg` remain read-only resources read
    from the app folder.
+9. **Hashed PAK entry names (fresh-install songlist lookup)**: the bundled
+   BetterGH3 `customs.pak.xen` stores its songlist under a hashed entry name
+   (`0x2cbadf14...` for `dlc_songlist.qb`) that is not present in the bundled
+   `keys.txt`. `GetSongListPak`/`GetDownloadPak` now fall back to matching the
+   leading checksum portion of hashed `FullName`s, so the first compile works on a
+   fresh install. Windows masked this bug by accumulating the checksum in
+   `keys_user.txt` over time; AppImage users hit it immediately.
 
 ## 5. Final validation checklist
 

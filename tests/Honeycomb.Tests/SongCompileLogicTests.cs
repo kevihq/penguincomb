@@ -26,6 +26,7 @@ public class FakeAppDataLocator : IAppDataLocator
     }
 }
 
+[Collection("ToolkitDebugState")]
 public class SongCompileLogicTests : IDisposable
 {
     private readonly FakeSettingsService _settings = new();
