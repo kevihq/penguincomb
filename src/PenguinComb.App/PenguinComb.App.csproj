@@ -12,6 +12,7 @@
     <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
     <ApplicationIcon>Assets\penguincomb.ico</ApplicationIcon>
     <AssemblyName>PenguinComb</AssemblyName>
+    <Version>1.0.0</Version>
   </PropertyGroup>
 
   <ItemGroup>
