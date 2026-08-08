@@ -16,7 +16,7 @@ public class FakePlatformService : IPlatformService
 
     public IReadOnlyList<string> GetPathDirectories()
         => (Environment.TryGetValue("PATH", out var path) ? path : "")
-            .Split(':', StringSplitOptions.RemoveEmptyEntries);
+            .Split(IsWindows ? ';' : ':', StringSplitOptions.RemoveEmptyEntries);
 }
 
 /// <summary>In-memory settings service for tests.</summary>

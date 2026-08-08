@@ -41,8 +41,15 @@ APPIMAGETOOL="$TOOLS/appimagetool-x86_64.AppImage"
 if [ ! -x "$APPIMAGETOOL" ]; then
     echo "Downloading appimagetool ..."
     mkdir -p "$TOOLS"
-    curl -sL -o "$APPIMAGETOOL" "$APPIMAGETOOL_URL"
+    # -f: fail on HTTP errors so a broken download cannot produce a broken AppImage
+    curl -fsSL -o "$APPIMAGETOOL" "$APPIMAGETOOL_URL"
     chmod +x "$APPIMAGETOOL"
+fi
+# The tool must itself be a valid AppImage ('AI' magic at offset 8)
+if [ "$(dd if="$APPIMAGETOOL" bs=1 skip=8 count=2 2>/dev/null)" != "AI" ]; then
+    echo "ERROR: downloaded appimagetool is not a valid AppImage (corrupt download?)." >&2
+    rm -f "$APPIMAGETOOL"
+    exit 1
 fi
 SUM="$(sha256sum "$APPIMAGETOOL" | awk '{print $1}')"
 if [ "$SUM" != "$APPIMAGETOOL_SHA256" ]; then
@@ -76,11 +83,13 @@ EOF
 chmod +x "$APPDIR/AppRun"
 
 # ---- 4. Build the AppImage ----
+RESULT="$OUT/PenguinComb-$VERSION-x86_64.AppImage"
+# Drop any stale output first so a failed build can never be masked by a leftover file.
+rm -f "$RESULT"
 echo "Building AppImage ..."
 cd "$OUT/appimage-stage"
 ARCH=x86_64 "$APPIMAGETOOL" --appimage-extract-and-run --no-appstream "$APPDIR" >/dev/null
 
-RESULT="$OUT/PenguinComb-$VERSION-x86_64.AppImage"
 if [ -f "$OUT/appimage-stage/PenguinComb-x86_64.AppImage" ]; then
     mv "$OUT/appimage-stage/PenguinComb-x86_64.AppImage" "$RESULT"
 elif [ -f "$RESULT" ]; then
@@ -94,6 +103,12 @@ else
         echo "ERROR: AppImage was not produced." >&2
         exit 1
     fi
+fi
+
+# The result must be a valid AppImage, not an empty or truncated file.
+if [ "$(dd if="$RESULT" bs=1 skip=8 count=2 2>/dev/null)" != "AI" ]; then
+    echo "ERROR: produced file is not a valid AppImage (missing 'AI' magic)." >&2
+    exit 1
 fi
 
 chmod +x "$RESULT"

@@ -15,7 +15,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           submodules: recursive
 
@@ -24,7 +24,7 @@ jobs:
         shell: bash
 
       - name: Setup .NET 8
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v5
         with:
           dotnet-version: '8.0.x'
 
@@ -68,13 +68,16 @@ jobs:
         run: |
           APPIMAGE=$(ls artifacts/PenguinComb-*-x86_64.AppImage | head -1)
           test -n "$APPIMAGE"
-          MAGIC=$(dd if="$APPIMAGE" bs=1 skip=8 count=3 2>/dev/null)
+          test -s "$APPIMAGE"
+          # AppImage type-2 magic is 'AI' at offset 8 (bytes 8-9); byte 10 is the format version.
+          MAGIC=$(dd if="$APPIMAGE" bs=1 skip=8 count=2 2>/dev/null)
           if [ "$MAGIC" != "AI" ]; then
-            echo "::error::Invalid AppImage magic bytes"
+            HEX=$(od -An -tx1 -j 8 -N 4 "$APPIMAGE" | tr -d ' \n')
+            echo "::error::Invalid AppImage magic bytes (expected 41 49 02 at offset 8, got $HEX)"
             exit 1
           fi
           test -x "$APPIMAGE"
-          echo "AppImage verified: $APPIMAGE"
+          echo "AppImage verified: $APPIMAGE ($(du -h "$APPIMAGE" | cut -f1))"
 
       - name: Publish Windows x64
         if: runner.os == 'Windows'

@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           submodules: recursive
 
@@ -21,7 +21,7 @@ jobs:
         run: ./scripts/init-deps.sh
 
       - name: Setup .NET 8
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v5
         with:
           dotnet-version: '8.0.x'
 
@@ -41,6 +41,9 @@ jobs:
           test -f artifacts/penguincomb-win-x64.tar.gz
           APPIMAGE=$(ls artifacts/PenguinComb-*-x86_64.AppImage | head -1)
           test -n "$APPIMAGE" -a -x "$APPIMAGE"
+          test -s "$APPIMAGE"
+          # AppImage type-2 magic is 'AI' at offset 8 (bytes 8-9)
+          test "$(dd if="$APPIMAGE" bs=1 skip=8 count=2 2>/dev/null)" = "AI"
           ls -lh artifacts/*.tar.gz artifacts/PenguinComb-*-x86_64.AppImage
 
       - name: Create GitHub Release with assets
