@@ -37,7 +37,7 @@ public class BatchCompileTests : IDisposable
             var compile = new SongCompileService(Settings, Notifications,
                 new ExternalProcessService(Platform), Platform,
                 new FakePermissionService(), checks, projects, resources);
-            Service = new BatchCompileService(projects, compile);
+            Service = new BatchCompileService(projects, compile, AppData);
         }
 
         public void Dispose()
@@ -140,6 +140,102 @@ public class BatchCompileTests : IDisposable
     }
 
     [Fact]
+    public async Task Batch_ChFolder_IsImportedAsGh3PcProjectAndCompiled()
+    {
+        Directory.CreateDirectory(_root);
+        _fixture.GameLocator.Folder = CreateValidGh3Folder(_root);
+
+        // A minimal Clone Hero song folder: song.ini with a checksum + an empty chart.
+        string chFolder = Path.Combine(_root, "Clone Hero", "My Great Song");
+        Directory.CreateDirectory(chFolder);
+        File.WriteAllText(Path.Combine(chFolder, "song.ini"), """
+            [song]
+            name = My Great Song
+            artist = Someone
+            charter = Someone Else
+            checksum = mygreatsong
+            """);
+        File.WriteAllBytes(Path.Combine(chFolder, "notes.mid"), []);
+
+        var results = await _fixture.Service.CompileChFoldersAsync([chFolder]);
+
+        Assert.Single(results);
+        Assert.Equal("mygreatsong", results[0].SongName); // checksum from song.ini
+        Assert.False(results[0].Success); // no real chart/audio -> fails at compile, without crashing
+        Assert.False(results[0].Cancelled);
+
+        // The import was recorded as a GH3 PC project in the per-user data directory.
+        string savedProject = Path.Combine(_fixture.AppData.DataDirectory, "Clone Hero Imports", "mygreatsong.ghproj");
+        Assert.True(File.Exists(savedProject), "Imported Clone Hero song should be saved as a .ghproj.");
+        var saved = Honeycomb.Application.Models.SongProjectData.FromJson(File.ReadAllText(savedProject));
+        Assert.NotNull(saved);
+        Assert.Equal("GH3", saved!.gameSelect);
+        Assert.Equal("PC", saved.platformSelect);
+        Assert.Equal("mygreatsong", saved.songName);
+    }
+
+    [Fact]
+    public async Task Batch_ChFolder_WithoutIni_UsesFolderNameAsSongName()
+    {
+        Directory.CreateDirectory(_root);
+        _fixture.GameLocator.Folder = CreateValidGh3Folder(_root);
+
+        // No song.ini, no chart -> the folder name is used and the compile fails cleanly.
+        string chFolder = Path.Combine(_root, "Some Song Folder");
+        Directory.CreateDirectory(chFolder);
+
+        var results = await _fixture.Service.CompileChFoldersAsync([chFolder]);
+
+        Assert.Single(results);
+        Assert.Equal("Some Song Folder", results[0].SongName);
+        Assert.False(results[0].Success);
+    }
+
+    [Fact]
+    public void BatchViewModel_CloneHeroLibrary_ScansForSongFolders()
+    {
+        Directory.CreateDirectory(_root);
+        string root = Path.Combine(_root, "library");
+        Directory.CreateDirectory(Path.Combine(root, "song one"));
+        Directory.CreateDirectory(Path.Combine(root, "song two"));
+        Directory.CreateDirectory(Path.Combine(root, "not a song"));
+        File.WriteAllText(Path.Combine(root, "song one", "song.ini"), "[song]\nname = Song One\n");
+        File.WriteAllText(Path.Combine(root, "song two", "song.ini"), "[song]\nname = Song Two\n");
+
+        var dialogs = new FakeDialogService { NextFolder = root };
+        var vm = new Honeycomb.App.ViewModels.BatchCompileViewModel(
+            dialogs, new FakeNotificationService(), _fixture.Service);
+
+        vm.AddChLibraryCommand.Execute(null);
+
+        Assert.Equal(2, vm.Songs.Count);
+        Assert.All(vm.Songs, s => Assert.True(s.IsCloneHero));
+        Assert.Contains(vm.Songs, s => s.SongName == "song one");
+        Assert.Contains(vm.Songs, s => s.SongName == "song two");
+    }
+
+    [Fact]
+    public void BatchViewModel_AddChSongs_UsesMultiFolderPicker()
+    {
+        Directory.CreateDirectory(_root);
+        string a = Path.Combine(_root, "folder a");
+        string b = Path.Combine(_root, "folder b");
+        Directory.CreateDirectory(a);
+        Directory.CreateDirectory(b);
+
+        var dialogs = new FakeDialogService { NextFolders = [a, b] };
+        var vm = new Honeycomb.App.ViewModels.BatchCompileViewModel(
+            dialogs, new FakeNotificationService(), _fixture.Service);
+
+        vm.AddChSongsCommand.Execute(null);
+
+        Assert.Equal(2, vm.Songs.Count);
+        Assert.All(vm.Songs, s => Assert.True(s.IsCloneHero));
+        Assert.Contains(vm.Songs, s => s.SongName == "folder a");
+        Assert.Contains(vm.Songs, s => s.SongName == "folder b");
+    }
+
+    [Fact]
     public void BatchViewModel_AddRemoveClear_ManagesSongList()
     {
         Directory.CreateDirectory(_root);
@@ -152,6 +248,7 @@ public class BatchCompileTests : IDisposable
 
         vm.AddFilesCommand.Execute(null);
         Assert.Equal(2, vm.Songs.Count);
+        Assert.All(vm.Songs, s => Assert.False(s.IsCloneHero));
 
         // Duplicates are ignored
         vm.AddFilesCommand.Execute(null);

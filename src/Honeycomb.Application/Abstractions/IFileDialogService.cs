@@ -25,6 +25,9 @@ public interface IFileDialogService
     Task<string?> PickSaveFileAsync(FileDialogOptions options, CancellationToken cancellationToken = default);
 
     Task<string?> PickFolderAsync(string title, string? initialDirectory = null, CancellationToken cancellationToken = default);
+
+    /// <summary>Picks multiple folders at once (empty list when the user cancels).</summary>
+    Task<IReadOnlyList<string>> PickFoldersAsync(string title, string? initialDirectory = null, CancellationToken cancellationToken = default);
 }
 
 public static class FileDialogOptionsExtensions

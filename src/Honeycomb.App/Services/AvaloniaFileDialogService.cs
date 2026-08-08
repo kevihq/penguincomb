@@ -156,6 +156,37 @@ public class AvaloniaFileDialogService : IFileDialogService
         }
     }
 
+    public async Task<IReadOnlyList<string>> PickFoldersAsync(string title, string? initialDirectory = null, CancellationToken cancellationToken = default)
+    {
+        var storage = GetStorage();
+        if (storage is null)
+        {
+            return [];
+        }
+
+        try
+        {
+            var folders = await WithTimeout(
+                storage.OpenFolderPickerAsync(new FolderPickerOpenOptions
+                {
+                    Title = title,
+                    AllowMultiple = true,
+                    SuggestedStartLocation = ToFolder(initialDirectory)
+                }));
+
+            return folders.Select(f => f.TryGetLocalPath() ?? "").Where(p => p.Length > 0).ToList();
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            return [];
+        }
+        catch (Exception ex)
+        {
+            await ReportPickerFailureAsync(ex, cancellationToken);
+            return [];
+        }
+    }
+
     private async Task<T> WithTimeout<T>(Task<T> picker)
     {
         try

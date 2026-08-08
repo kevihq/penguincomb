@@ -43,6 +43,7 @@ public class FakeDialogService : IFileDialogService
     public string? NextFolder { get; set; }
     public string? NextSaveFile { get; set; }
     public List<string> NextFiles { get; set; } = new();
+    public List<string> NextFolders { get; set; } = new();
     public bool Cancels { get; set; }
 
     public Task<string?> PickOpenFileAsync(FileDialogOptions options, CancellationToken cancellationToken = default)
@@ -56,6 +57,9 @@ public class FakeDialogService : IFileDialogService
 
     public Task<string?> PickFolderAsync(string title, string? initialDirectory = null, CancellationToken cancellationToken = default)
         => Task.FromResult(Cancels ? null : NextFolder);
+
+    public Task<IReadOnlyList<string>> PickFoldersAsync(string title, string? initialDirectory = null, CancellationToken cancellationToken = default)
+        => Task.FromResult<IReadOnlyList<string>>(Cancels ? new List<string>() : NextFolders);
 }
 
 /// <summary>Fake notification service; records the last message.</summary>

@@ -6,21 +6,28 @@ using Honeycomb.Application.Services;
 
 namespace Honeycomb.App.ViewModels;
 
-/// <summary>A single .ghproj queued for batch compilation.</summary>
+/// <summary>A single song queued for batch compilation (.ghproj project or Clone Hero folder).</summary>
 public partial class BatchSongItem : ObservableObject
 {
-    public BatchSongItem(string path)
+    public BatchSongItem(string path, bool isCloneHero)
     {
         FilePath = path;
-        _songName = System.IO.Path.GetFileNameWithoutExtension(path);
+        IsCloneHero = isCloneHero;
+        _songName = isCloneHero
+            ? Path.GetFileName(path.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar))
+            : Path.GetFileNameWithoutExtension(path);
     }
 
     public string FilePath { get; }
+    public bool IsCloneHero { get; }
+
+    /// <summary>"Clone Hero" or ".ghproj", shown next to the song name.</summary>
+    public string KindText => IsCloneHero ? "Clone Hero" : ".ghproj";
 
     [ObservableProperty]
     private string _songName;
 
-    /// <summary>Queued, Loading, Compiling, Done, Failed, Cancelled or Skipped.</summary>
+    /// <summary>Queued, Loading, Importing, Compiling, Done, Failed, Cancelled or Skipped.</summary>
     [ObservableProperty]
     private string _status = "Queued";
 
@@ -29,9 +36,9 @@ public partial class BatchSongItem : ObservableObject
 }
 
 /// <summary>
-/// Compiles multiple .ghproj projects in sequence. Each song runs through the same
-/// pipeline as the single-song compiler; failures are collected per song and shown
-/// in the list plus a summary at the end.
+/// Compiles multiple songs in sequence. Each entry is either a .ghproj project or
+/// a Clone Hero song folder (imported as a GH3 PC project first). Failures are
+/// collected per song and shown in the list plus a summary at the end.
 /// </summary>
 public partial class BatchCompileViewModel : ObservableObject
 {
@@ -81,29 +88,55 @@ public partial class BatchCompileViewModel : ObservableObject
 
         foreach (string file in files)
         {
-            AddProject(file);
+            AddSource(file, isCloneHero: false);
         }
     }
 
+    /// <summary>Picks multiple Clone Hero song folders at once.</summary>
     [RelayCommand]
-    private async Task AddFolderAsync(CancellationToken cancellationToken)
+    private async Task AddChSongsAsync(CancellationToken cancellationToken)
     {
         if (IsBusy)
         {
             return;
         }
 
-        string? folder = await _dialogs.PickFolderAsync("Select a folder containing .ghproj files", cancellationToken: cancellationToken);
-        if (folder is null)
+        var folders = await _dialogs.PickFoldersAsync("Select Clone Hero song folders", cancellationToken: cancellationToken);
+
+        int added = 0;
+        foreach (string folder in folders)
+        {
+            if (AddSource(folder, isCloneHero: true))
+            {
+                added++;
+            }
+        }
+
+        if (added == 0 && folders.Count > 0)
+        {
+            await _notifications.ShowMessageAsync("No Songs Added",
+                "The selected folders were already in the list.", cancellationToken);
+        }
+    }
+
+    [RelayCommand]
+    private async Task AddChLibraryAsync(CancellationToken cancellationToken)
+    {
+        if (IsBusy)
+        {
+            return;
+        }
+
+        string? root = await _dialogs.PickFolderAsync("Select the folder that contains your Clone Hero songs", cancellationToken: cancellationToken);
+        if (root is null)
         {
             return;
         }
 
         int added = 0;
-        foreach (string file in Directory.EnumerateFiles(folder, "*.ghproj", SearchOption.AllDirectories)
-                     .OrderBy(f => f, StringComparer.OrdinalIgnoreCase))
+        foreach (string songFolder in FindChSongFolders(root))
         {
-            if (AddProject(file))
+            if (AddSource(songFolder, isCloneHero: true))
             {
                 added++;
             }
@@ -111,18 +144,35 @@ public partial class BatchCompileViewModel : ObservableObject
 
         if (added == 0)
         {
-            await _notifications.ShowMessageAsync("No Projects Found",
-                "No .ghproj files were found in the selected folder.", cancellationToken);
+            await _notifications.ShowMessageAsync("No Songs Found",
+                "No Clone Hero song folders (folders containing a song.ini) were found in the selected folder.", cancellationToken);
         }
     }
 
-    private bool AddProject(string path)
+    /// <summary>Finds every folder containing a song.ini, one level deep under the root.</summary>
+    private static IEnumerable<string> FindChSongFolders(string root)
     {
-        if (Songs.Any(s => string.Equals(s.FilePath, path, StringComparison.OrdinalIgnoreCase)))
+        if (File.Exists(Path.Combine(root, "song.ini")))
+        {
+            yield return root;
+        }
+
+        foreach (string sub in Directory.EnumerateDirectories(root))
+        {
+            if (File.Exists(Path.Combine(sub, "song.ini")))
+            {
+                yield return sub;
+            }
+        }
+    }
+
+    private bool AddSource(string path, bool isCloneHero)
+    {
+        if (Songs.Any(s => s.IsCloneHero == isCloneHero && string.Equals(s.FilePath, path, StringComparison.OrdinalIgnoreCase)))
         {
             return false;
         }
-        Songs.Add(new BatchSongItem(path));
+        Songs.Add(new BatchSongItem(path, isCloneHero));
         return true;
     }
 
@@ -158,7 +208,7 @@ public partial class BatchCompileViewModel : ObservableObject
         if (Songs.Count == 0)
         {
             await _notifications.ShowMessageAsync("No Songs",
-                "Add at least one .ghproj project before compiling.", cancellationToken);
+                "Add at least one .ghproj project or Clone Hero song before compiling.", cancellationToken);
             return;
         }
 
@@ -169,7 +219,9 @@ public partial class BatchCompileViewModel : ObservableObject
         StatusText = "Starting batch compile...";
         try
         {
-            var paths = Songs.Select(s => s.FilePath).ToList();
+            var sources = Songs
+                .Select(s => new BatchSource(s.IsCloneHero ? BatchSourceKind.CloneHeroFolder : BatchSourceKind.Project, s.FilePath))
+                .ToList();
             foreach (var song in Songs)
             {
                 song.Status = "Queued";
@@ -177,7 +229,7 @@ public partial class BatchCompileViewModel : ObservableObject
             }
 
             var progress = new Progress<BatchCompileUpdate>(ApplyUpdate);
-            var results = await _service.CompileAllAsync(paths, progress, _cts.Token);
+            var results = await _service.CompileAsync(sources, progress, _cts.Token);
 
             ApplyResults(results);
 
@@ -186,7 +238,7 @@ public partial class BatchCompileViewModel : ObservableObject
             string summary = failed == 0
                 ? $"Batch compile finished: {succeeded} of {results.Count} song(s) compiled successfully."
                 : $"Batch compile finished: {succeeded} succeeded, {failed} failed.";
-            if (results.Count < paths.Count)
+            if (results.Count < sources.Count)
             {
                 summary += " The remaining songs were skipped.";
             }
