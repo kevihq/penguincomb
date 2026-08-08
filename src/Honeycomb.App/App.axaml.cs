@@ -91,7 +91,7 @@ public partial class App : Avalonia.Application
             var sink = Services.GetRequiredService<ConsoleLogSink>();
             Console.SetOut(sink);
             Console.SetError(sink);
-            Console.WriteLine($"Honeycomb {typeof(App).Assembly.GetName().Version} started.");
+            Console.WriteLine($"Honeycomb {typeof(App).Assembly.GetName().Version} - created by Kelvin Klein.");
         }
         catch (Exception ex)
         {
