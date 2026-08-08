@@ -88,6 +88,7 @@ public class AvaloniaSmokeTests
 
         Assert.NotNull(vm.OpenCompileSongCommand);
         Assert.NotNull(vm.OpenBatchCompileCommand);
+        Assert.NotNull(vm.OpenChToGh3Command);
         Assert.NotNull(vm.OpenImportSghCommand);
         Assert.NotNull(vm.OpenPakToolsCommand);
         Assert.NotNull(vm.OpenWadToolsCommand);
@@ -172,6 +173,10 @@ public class AvaloniaSmokeTests
         var batchWindow = new BatchCompileWindow { DataContext = services.GetRequiredService<BatchCompileViewModel>() };
         ApplyTemplate(batchWindow);
         Assert.NotNull(batchWindow.Content);
+
+        var chToGh3Window = new ChToGh3Window { DataContext = services.GetRequiredService<ChToGh3ViewModel>() };
+        ApplyTemplate(chToGh3Window);
+        Assert.NotNull(chToGh3Window.Content);
 
         var pakWindow = new PakToolsWindow { DataContext = services.GetRequiredService<PakToolsViewModel>() };
         ApplyTemplate(pakWindow);

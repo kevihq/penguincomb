@@ -33,12 +33,21 @@ public class BatchCompileService
     private readonly ProjectFileService _projects;
     private readonly SongCompileService _compile;
     private readonly IAppDataLocator _appData;
+    private readonly ISettingsService _settings;
+    private readonly GameInstallValidator _validator;
 
-    public BatchCompileService(ProjectFileService projects, SongCompileService compile, IAppDataLocator appData)
+    public BatchCompileService(
+        ProjectFileService projects,
+        SongCompileService compile,
+        IAppDataLocator appData,
+        ISettingsService settings,
+        GameInstallValidator validator)
     {
         _projects = projects;
         _compile = compile;
         _appData = appData;
+        _settings = settings;
+        _validator = validator;
     }
 
     /// <summary>Compiles .ghproj projects (kept for the file-based batch flow).</summary>
@@ -59,6 +68,75 @@ public class BatchCompileService
         CancellationToken cancellationToken = default)
         => CompileAsync(folders.Select(f => new BatchSource(BatchSourceKind.CloneHeroFolder, f)).ToList(),
             progress, cancellationToken, nameSuffix);
+
+    /// <summary>
+    /// Quick "Clone Hero to Better GH3" flow: validates and remembers the game
+    /// folder, then imports and compiles every Clone Hero song. No .ghproj files
+    /// are kept - each song is compiled straight from its folder.
+    /// </summary>
+    /// <exception cref="InvalidOperationException">The GH3 folder is not a valid
+    /// game installation (missing data files).</exception>
+    public async Task<IReadOnlyList<BatchSongResult>> CompileChToGh3Async(
+        IReadOnlyList<string> folders,
+        string gh3Folder,
+        string? nameSuffix = null,
+        IProgress<BatchCompileUpdate>? progress = null,
+        CancellationToken cancellationToken = default)
+    {
+        var validation = _validator.Validate(gh3Folder, GameNames.GH3);
+        if (!validation.IsValid)
+        {
+            throw new InvalidOperationException(
+                $"The selected folder is not a valid Guitar Hero 3 installation. " +
+                $"Missing: {string.Join(", ", validation.MissingItems)}");
+        }
+
+        // Remember the game folder so the compile preflight does not re-prompt.
+        _settings.Settings.Gh3FolderPath = gh3Folder;
+        await _settings.SaveAsync(cancellationToken);
+
+        var results = new List<BatchSongResult>(folders.Count);
+        int completed = 0;
+
+        foreach (string folder in folders)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            string folderName = DisplayName(folder);
+            try
+            {
+                progress?.Report(new BatchCompileUpdate(completed, folders.Count, folderName, "Importing Clone Hero folder..."));
+                var data = CreateChProject(folder, out string songName, nameSuffix, saveProject: false);
+                var state = CreateState(data);
+
+                var result = await CompileProjectAsync(state, folder, songName,
+                    completed, folders.Count, progress, cancellationToken);
+
+                // The transient project file was only needed so the pipeline's
+                // auto-save does not prompt; remove it now.
+                try { File.Delete(data.projectPath); } catch { }
+
+                results.Add(result);
+                if (result.Cancelled)
+                {
+                    return results;
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                results.Add(new BatchSongResult(folder, folderName, false, "Cancelled", true));
+                return results;
+            }
+            catch (Exception ex)
+            {
+                results.Add(new BatchSongResult(folder, folderName, false, ex.Message, false));
+            }
+
+            completed++;
+        }
+
+        return results;
+    }
 
     /// <summary>
     /// Compiles every source in order. Cancellation stops the batch after the
@@ -88,7 +166,7 @@ public class BatchCompileService
                 if (source.Kind == BatchSourceKind.CloneHeroFolder)
                 {
                     progress?.Report(new BatchCompileUpdate(completed, sources.Count, displayName, "Importing Clone Hero folder..."));
-                    data = CreateChProject(source.Path, out songName, nameSuffix);
+                    data = CreateChProject(source.Path, out songName, nameSuffix, saveProject: true);
                 }
                 else
                 {
@@ -177,11 +255,12 @@ public class BatchCompileService
 
     /// <summary>
     /// Builds a GH3 PC project from a Clone Hero song folder (song.ini metadata +
-    /// chart + audio). The project is recorded as a .ghproj in the per-user data
-    /// directory so the compile pipeline's auto-save writes there instead of
-    /// prompting, and the imported song can be reopened and tweaked later.
+    /// chart + audio). When <paramref name="saveProject"/> is true the project is
+    /// recorded as a .ghproj in the per-user data directory; otherwise a transient
+    /// project file is used so the compile pipeline's auto-save writes there
+    /// instead of prompting, and the caller removes it afterwards.
     /// </summary>
-    private SongProjectData CreateChProject(string folder, out string songName, string? nameSuffix)
+    private SongProjectData CreateChProject(string folder, out string songName, string? nameSuffix, bool saveProject)
     {
         var data = _projects.LoadProjectSync(_projects.DefaultTemplatePath) ?? new SongProjectData();
         _projects.LoadFromChFolder(data, folder);
@@ -206,11 +285,22 @@ public class BatchCompileService
         }
         data.songName = songName;
 
-        string saveDir = Path.Combine(_appData.DataDirectory, "Clone Hero Imports");
-        Directory.CreateDirectory(saveDir);
-        string projectPath = Path.Combine(saveDir, $"{SanitizeFileName(songName)}.ghproj");
-        data.projectPath = projectPath;
-        File.WriteAllText(projectPath, data.ToJson());
+        if (saveProject)
+        {
+            string saveDir = Path.Combine(_appData.DataDirectory, "Clone Hero Imports");
+            Directory.CreateDirectory(saveDir);
+            string projectPath = Path.Combine(saveDir, $"{SanitizeFileName(songName)}.ghproj");
+            data.projectPath = projectPath;
+            File.WriteAllText(projectPath, data.ToJson());
+        }
+        else
+        {
+            string tempDir = Path.Combine(Path.GetTempPath(), "Honeycomb");
+            Directory.CreateDirectory(tempDir);
+            string projectPath = Path.Combine(tempDir, $"{Guid.NewGuid():N}.ghproj");
+            data.projectPath = projectPath;
+            File.WriteAllText(projectPath, data.ToJson());
+        }
 
         return data;
     }

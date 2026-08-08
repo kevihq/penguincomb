@@ -20,6 +20,9 @@ a submodule), the same algorithms used by the original GUI and the
   GH3 PC projects (metadata from `song.ini`, chart and audio picked up
   automatically), with per-song status, progress, cancellation and a results
   summary.
+* **Clone Hero to Better GH3** (main window): the quick one-shot flow - pick your
+  Clone Hero song folders, point at your GH3 game folder (remembered for next
+  time), press Convert. No project files are created or saved.
 * Import SGH archives from GHTCP to PC, or build 360/PS3 packages with Onyx.
 * Extract and compile **PAK** files (all consoles; QB files are converted to
   editable Q text and back).

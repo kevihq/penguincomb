@@ -17,6 +17,7 @@
             <MenuItem Header="File">
                 <MenuItem Header="Compile a Song" Command="{Binding OpenCompileSongCommand}" />
                 <MenuItem Header="Batch Compile..." Command="{Binding OpenBatchCompileCommand}" />
+                <MenuItem Header="Clone Hero to Better GH3..." Command="{Binding OpenChToGh3Command}" />
                 <MenuItem Header="Import SGH Archive" Command="{Binding OpenImportSghCommand}" />
                 <MenuItem Header="PAK Tools" Command="{Binding OpenPakToolsCommand}" />
                 <MenuItem Header="PS2 Archive Tools" Command="{Binding OpenWadToolsCommand}" />
@@ -45,6 +46,7 @@
             <TextBlock Text="{Binding FfmpegWarning}" TextWrapping="Wrap" Foreground="#b8860b" IsVisible="{Binding FfmpegWarning, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" Margin="0,6" />
 
             <Button Content="Compile a Song" Classes="accent" Command="{Binding OpenCompileSongCommand}" HorizontalAlignment="Stretch" Height="52" />
+            <Button Content="Clone Hero to Better GH3" Command="{Binding OpenChToGh3Command}" HorizontalAlignment="Stretch" Height="52" />
             <Button Content="PAK Tools" Command="{Binding OpenPakToolsCommand}" HorizontalAlignment="Stretch" Height="52" />
             <Button Content="PS2 Archive Tools" Command="{Binding OpenWadToolsCommand}" HorizontalAlignment="Stretch" Height="52" />
             <TextBlock Text="Other Tools" HorizontalAlignment="Center" Margin="0,8,0,0" />

@@ -79,6 +79,13 @@ public partial class MainWindowViewModel : ObservableObject
     }
 
     [RelayCommand]
+    private void OpenChToGh3()
+    {
+        var window = new ChToGh3Window { DataContext = _services.GetRequiredService<ChToGh3ViewModel>() };
+        window.Show();
+    }
+
+    [RelayCommand]
     private void OpenImportSgh(string? inputFile = null)
     {
         var vm = _services.GetRequiredService<ImportSghViewModel>();

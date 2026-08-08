@@ -75,6 +75,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<MainWindowViewModel>();
         services.AddTransient<CompileSongViewModel>();
         services.AddTransient<BatchCompileViewModel>();
+        services.AddTransient<ChToGh3ViewModel>();
         services.AddTransient<ImportSghViewModel>();
         services.AddTransient<PakToolsViewModel>();
         services.AddTransient<WadToolsViewModel>();
@@ -85,6 +86,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<MainWindow>();
         services.AddTransient<CompileSongWindow>();
         services.AddTransient<BatchCompileWindow>();
+        services.AddTransient<ChToGh3Window>();
         services.AddTransient<ImportSghWindow>();
         services.AddTransient<PakToolsWindow>();
         services.AddTransient<WadToolsWindow>();

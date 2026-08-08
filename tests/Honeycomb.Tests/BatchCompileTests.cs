@@ -37,7 +37,7 @@ public class BatchCompileTests : IDisposable
             var compile = new SongCompileService(Settings, Notifications,
                 new ExternalProcessService(Platform), Platform,
                 new FakePermissionService(), checks, projects, resources);
-            Service = new BatchCompileService(projects, compile, AppData);
+            Service = new BatchCompileService(projects, compile, AppData, Settings, new GameInstallValidator(Platform));
         }
 
         public void Dispose()
@@ -291,6 +291,70 @@ public class BatchCompileTests : IDisposable
 
         Assert.Single(results);
         Assert.Equal("songa", results[0].SongName);
+    }
+
+    [Fact]
+    public async Task ChToGh3_InvalidGameFolder_ThrowsWithMissingItems()
+    {
+        Directory.CreateDirectory(_root);
+        string chFolder = Path.Combine(_root, "song");
+        Directory.CreateDirectory(chFolder);
+        File.WriteAllText(Path.Combine(chFolder, "song.ini"), "[song]\nname = My Song\nchecksum = mysong\n");
+
+        string empty = Path.Combine(_root, "not-a-game");
+        Directory.CreateDirectory(empty);
+
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            _fixture.Service.CompileChToGh3Async([chFolder], empty));
+
+        Assert.Contains("not a valid Guitar Hero 3 installation", ex.Message);
+        Assert.Contains("Missing", ex.Message);
+    }
+
+    [Fact]
+    public async Task ChToGh3_ValidGameFolder_CompilesAndRemembersFolder_WithoutSavingProjects()
+    {
+        Directory.CreateDirectory(_root);
+        string game = CreateValidGh3Folder(_root);
+        _fixture.Settings.Settings.Gh3FolderPath = "";
+
+        string chFolder = Path.Combine(_root, "song");
+        Directory.CreateDirectory(chFolder);
+        File.WriteAllText(Path.Combine(chFolder, "song.ini"), "[song]\nname = My Song\nchecksum = mysong\n");
+
+        var results = await _fixture.Service.CompileChToGh3Async([chFolder], game);
+
+        Assert.Single(results);
+        Assert.Equal("mysong", results[0].SongName);
+
+        // The game folder is remembered in settings so the preflight never re-prompts.
+        Assert.Equal(game, _fixture.Settings.Settings.Gh3FolderPath);
+        Assert.Equal(1, _fixture.Settings.SaveCount);
+
+        // The quick flow keeps no project files.
+        Assert.False(Directory.Exists(Path.Combine(_fixture.AppData.DataDirectory, "Clone Hero Imports")));
+    }
+
+    [Fact]
+    public void ChToGh3ViewModel_RemembersGameFolderFromSettings_AndAddsSongs()
+    {
+        Directory.CreateDirectory(_root);
+        string chFolder = Path.Combine(_root, "song");
+        Directory.CreateDirectory(chFolder);
+
+        var settings = new FakeSettingsService();
+        settings.Settings.Gh3FolderPath = "/games/gh3";
+        var vm = new Honeycomb.App.ViewModels.ChToGh3ViewModel(
+            new FakeDialogService { NextFolders = [chFolder] },
+            new FakeNotificationService(),
+            _fixture.Service,
+            settings);
+
+        Assert.Equal("/games/gh3", vm.Gh3Folder); // prefilled from settings
+
+        vm.AddSongsCommand.Execute(null);
+        Assert.Single(vm.Songs);
+        Assert.True(vm.Songs[0].IsCloneHero);
     }
 
     [Fact]
