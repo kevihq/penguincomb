@@ -683,7 +683,7 @@ index 1897d61..df15e13 100644
              }
          }
 diff --git a/QBDebug/DebugReader.cs b/QBDebug/DebugReader.cs
-index 26d0830..b16cca7 100644
+index 26d0830..c328183 100644
 --- a/QBDebug/DebugReader.cs
 +++ b/QBDebug/DebugReader.cs
 @@ -17,6 +17,50 @@ namespace GH_Toolkit_Core.Debug
@@ -748,7 +748,7 @@ index 26d0830..b16cca7 100644
  
              public DebugData()
              {
-@@ -60,12 +104,20 @@ namespace GH_Toolkit_Core.Debug
+@@ -60,12 +104,27 @@ namespace GH_Toolkit_Core.Debug
                  QsDbgS = ReadQSDebug("_s");
                  Ps2PakDbg = ReadPs2PakDbg();
  
@@ -764,8 +764,15 @@ index 26d0830..b16cca7 100644
 +                try
 +                {
 +                    var folder = GetUserKeyFolder();
-+                    QbUserWriter = new StreamWriter(Path.Combine(folder, "keys_user.txt"), true, Encoding.UTF8) { AutoFlush = true };
-+                    QsUserWriter = new StreamWriter(Path.Combine(folder, "keys_qs_user.txt"), true, Encoding.UTF8) { AutoFlush = true };
++                    // FileShare.Delete allows the file to be removed/rotated on Windows
++                    // while the writer stays open (the legacy delete-then-recreate flow
++                    // in Honeycomb GUI would otherwise hit a sharing violation).
++                    QbUserWriter = new StreamWriter(
++                        new FileStream(Path.Combine(folder, "keys_user.txt"), FileMode.Append, FileAccess.Write, FileShare.ReadWrite | FileShare.Delete),
++                        Encoding.UTF8) { AutoFlush = true };
++                    QsUserWriter = new StreamWriter(
++                        new FileStream(Path.Combine(folder, "keys_qs_user.txt"), FileMode.Append, FileAccess.Write, FileShare.ReadWrite | FileShare.Delete),
++                        Encoding.UTF8) { AutoFlush = true };
 +                }
 +                catch
 +                {
@@ -775,7 +782,7 @@ index 26d0830..b16cca7 100644
              }
  
              public void Dispose()
-@@ -85,14 +137,25 @@ namespace GH_Toolkit_Core.Debug
+@@ -85,14 +144,25 @@ namespace GH_Toolkit_Core.Debug
              {
                  string folder = Path.Combine(ExeRootFolder, "QBDebug");
                  string dbg = Path.Combine(folder, "keys.txt");
@@ -808,7 +815,7 @@ index 26d0830..b16cca7 100644
  
                  var dict = new Dictionary<uint, string>();
                  foreach (var line in lines)
-@@ -118,14 +181,25 @@ namespace GH_Toolkit_Core.Debug
+@@ -118,14 +188,25 @@ namespace GH_Toolkit_Core.Debug
              {
                  string folder = Path.Combine(ExeRootFolder, "QBDebug");
                  string dbg = Path.Combine(folder, $"keys_qs{suffix}.txt");
@@ -841,7 +848,7 @@ index 26d0830..b16cca7 100644
  
                  var dict = new Dictionary<uint, string>();
                  foreach (var line in lines)
-@@ -184,7 +258,10 @@ namespace GH_Toolkit_Core.Debug
+@@ -184,7 +265,10 @@ namespace GH_Toolkit_Core.Debug
          private static void AddQbKeyToUser(string key, string value)
          {
              lock (ChecksumDbgLock)
@@ -853,7 +860,7 @@ index 26d0830..b16cca7 100644
          }
  
          public static void AddQbKeyToUser(uint key, string value) =>
-@@ -193,7 +270,10 @@ namespace GH_Toolkit_Core.Debug
+@@ -193,7 +277,10 @@ namespace GH_Toolkit_Core.Debug
          private static void AddQsKeyToUser(string key, string value)
          {
              lock (QsDbgLock)

@@ -18,13 +18,18 @@ public class AppDataLocatorTests
         };
     }
 
+    // The Linux path resolution runs on every host in CI; Path.Combine uses the
+    // host separator, so normalize before comparing against the canonical
+    // forward-slash Linux form.
+    private static string N(string path) => path.Replace('\\', '/');
+
     [Fact]
     public void Linux_NoXdg_UsesHomeFallbacks()
     {
         var locator = new AppDataLocator(LinuxPlatform());
-        Assert.Equal("/home/alice/.config/penguincomb", locator.ConfigDirectory);
-        Assert.Equal("/home/alice/.local/share/penguincomb", locator.DataDirectory);
-        Assert.Equal("/home/alice/.cache/penguincomb", locator.CacheDirectory);
+        Assert.Equal("/home/alice/.config/penguincomb", N(locator.ConfigDirectory));
+        Assert.Equal("/home/alice/.local/share/penguincomb", N(locator.DataDirectory));
+        Assert.Equal("/home/alice/.cache/penguincomb", N(locator.CacheDirectory));
     }
 
     [Fact]
@@ -36,9 +41,9 @@ public class AppDataLocatorTests
         platform.Environment["XDG_CACHE_HOME"] = "/xdg/cache";
 
         var locator = new AppDataLocator(platform);
-        Assert.Equal("/xdg/config/penguincomb", locator.ConfigDirectory);
-        Assert.Equal("/xdg/data/penguincomb", locator.DataDirectory);
-        Assert.Equal("/xdg/cache/penguincomb", locator.CacheDirectory);
+        Assert.Equal("/xdg/config/penguincomb", N(locator.ConfigDirectory));
+        Assert.Equal("/xdg/data/penguincomb", N(locator.DataDirectory));
+        Assert.Equal("/xdg/cache/penguincomb", N(locator.CacheDirectory));
     }
 
     [Fact]

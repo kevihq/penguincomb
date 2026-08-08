@@ -49,20 +49,22 @@ public class ExternalProcessTests
 
         if (OperatingSystem.IsWindows())
         {
-            // cmd.exe mangles output through the console code page, so have the
-            // child write the argument it received to a UTF-8 file instead of
-            // echoing it. $args[0] is the value, $args[1] the output file.
+            // cmd.exe would mangle the argument through the console code page, so
+            // have the child write the argument it received to a UTF-8 file instead
+            // of echoing it. A param() script run with -File binds arguments
+            // positionally and reliably, unlike -Command's $args handling.
             string dir = Path.Combine(Path.GetTempPath(), "penguincomb-tests", Guid.NewGuid().ToString("N"));
             Directory.CreateDirectory(dir);
+            string script = Path.Combine(dir, "echo-arg.ps1");
             string outFile = Path.Combine(dir, "out.txt");
             try
             {
+                await File.WriteAllTextAsync(script,
+                    "param([string]$Value, [string]$OutFile)\r\n" +
+                    "Set-Content -LiteralPath $OutFile -Value $Value -Encoding UTF8 -NoNewline\r\n");
+
                 var result = await service.RunAsync("powershell.exe",
-                [
-                    "-NoProfile", "-Command",
-                    "Set-Content -LiteralPath $args[1] -Value $args[0] -Encoding UTF8",
-                    expected, outFile,
-                ]);
+                    ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", script, expected, outFile]);
 
                 Assert.Equal(0, result.ExitCode);
                 Assert.Equal(expected, await File.ReadAllTextAsync(outFile));
